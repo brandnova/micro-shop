@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FaShoppingCart, FaTimes, FaInfoCircle } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaShoppingCart, FaTimes, FaInfoCircle, FaHeart, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
@@ -14,6 +14,8 @@ const HomePage = () => {
   const [heroProducts, setHeroProducts] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [wishlist, setWishlist] = useState([]);
+  const carouselRef = useRef(null);
 
   useEffect(() => {
     fetchProducts();
@@ -41,6 +43,17 @@ const HomePage = () => {
       setBankDetails(response.data[0]); // Assuming there's only one bank details entry
     } catch (error) {
       console.error('Error fetching bank details:', error);
+    }
+  };
+
+  const scrollCarousel = (direction) => {
+    if (carouselRef.current) {
+      const { scrollLeft, clientWidth } = carouselRef.current;
+      const scrollTo = direction === 'left'
+        ? scrollLeft - clientWidth
+        : scrollLeft + clientWidth;
+      
+      carouselRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
     }
   };
 
@@ -74,7 +87,6 @@ const HomePage = () => {
     return cartItems.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2);
   };
 
-
   const handleCheckout = async (formData) => {
     try {
       const response = await axios.post('/api/transactions/', {
@@ -92,39 +104,73 @@ const HomePage = () => {
     }
   };
 
+  const getCartItemsCount = () => {
+    return cartItems.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  const toggleWishlist = (productId) => {
+    setWishlist(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
   if (loading) {
-    return <div className="min-h-screen bg-pink-50 flex items-center justify-center">
-      <p className="text-2xl text-pink-600">Loading products...</p>
-    </div>;
+    return (
+      <div className="min-h-screen bg-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-pink-600"></div>
+          <p className="mt-4 text-xl text-pink-600">Loading our elegant collection...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="min-h-screen bg-pink-50 flex items-center justify-center">
-      <p className="text-2xl text-red-600">{error}</p>
-    </div>;
+    return (
+      <div className="min-h-screen bg-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <FaTimes className="text-red-500 text-5xl mb-4 mx-auto" />
+          <p className="text-2xl text-red-600">{error}</p>
+          <button 
+            onClick={fetchProducts} 
+            className="mt-4 px-6 py-2 bg-pink-500 text-white rounded-full hover:bg-pink-600 transition-colors duration-300"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
 
-
   return (
-    <div className="min-h-screen bg-pink-50">
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white">
       <header className="bg-white shadow-md sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-3xl font-serif text-pink-600">Feminine Elegance</h1>
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
             <button
               onClick={() => setIsBankDetailsOpen(true)}
-              className="mr-4 text-pink-600 hover:text-pink-800 transition-colors duration-300"
+              className="text-pink-600 hover:text-pink-800 transition-colors duration-300"
               aria-label="Show bank details"
             >
-              <FaInfoCircle size={24} />
+              <FaInfoCircle size={20} />
             </button>
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="text-pink-600 hover:text-pink-800 transition-colors duration-300"
-              aria-label="Open shopping cart"
-            >
-              <FaShoppingCart size={24} />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setIsCartOpen(true)}
+                className="text-pink-600 hover:text-pink-800 transition-colors duration-300"
+                aria-label="Open shopping cart"
+              >
+                <FaShoppingCart size={20} />
+              </button>
+              {getCartItemsCount() > 0 && (
+                <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {getCartItemsCount()}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -132,40 +178,105 @@ const HomePage = () => {
       <main className="container mx-auto px-4 py-16">
         {heroProducts.length > 0 && (
           <section className="mb-16">
-            <h2 className="text-3xl font-serif text-pink-600 mb-8">Featured Products</h2>
-            <div className="flex overflow-x-auto space-x-4 pb-4">
-              {heroProducts.map((product) => (
-                <div key={product.id} className="flex-none w-64">
-                  <img src={product.image} alt={product.name} className="w-full h-40 object-cover rounded-lg" />
-                  <h3 className="mt-2 text-lg font-semibold">{product.name}</h3>
-                  <p className="text-pink-600">${product.price}</p>
-                </div>
-              ))}
+            <h2 className="text-3xl font-serif text-pink-600 mb-8">Featured Collection</h2>
+            <div className="relative">
+              <button 
+                onClick={() => scrollCarousel('left')} 
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 rounded-full p-2 z-10"
+                aria-label="Scroll left"
+              >
+                <FaChevronLeft className="text-pink-600" />
+              </button>
+              <button 
+                onClick={() => scrollCarousel('right')} 
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 rounded-full p-2 z-10"
+                aria-label="Scroll right"
+              >
+                <FaChevronRight className="text-pink-600" />
+              </button>
+              <div 
+                ref={carouselRef} 
+                className="flex overflow-x-auto justify-center space-x-4 pb-4 scrollbar-hide"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {heroProducts.map((product) => (
+                  <motion.div 
+                    key={product.id} 
+                    className="flex-none w-64 bg-white rounded-lg shadow-lg overflow-hidden"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <img src={product.image} alt={product.name} className="w-full h-64 object-cover" />
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
+                      <p className="text-pink-600 font-bold">${product.price}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </section>
         )}
         
-        <h2 className="text-3xl font-serif text-pink-600 mb-8">Our Products</h2>
+        <section className="mb-16 bg-pink-100 rounded-lg p-8">
+          <h2 className="text-2xl font-serif text-pink-600 mb-4">Easy Steps to Your Perfect Purchase</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="bg-pink-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-pink-600">1</span>
+              </div>
+              <h3 className="font-semibold mb-2">Browse Our Collection</h3>
+              <p>Explore our curated selection of elegant pieces designed just for you.</p>
+            </div>
+            <div className="text-center">
+              <div className="bg-pink-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-pink-600">2</span>
+              </div>
+              <h3 className="font-semibold mb-2">Add to Cart</h3>
+              <p>Select your favorite items and add them to your shopping cart with a single click.</p>
+            </div>
+            <div className="text-center">
+              <div className="bg-pink-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-pink-600">3</span>
+              </div>
+              <h3 className="font-semibold mb-2">Secure Checkout</h3>
+              <p>Complete your purchase safely and easily through our secure checkout process.</p>
+            </div>
+          </div>
+        </section>
+
+        <h2 className="text-3xl font-serif text-pink-600 mb-8">Our Exquisite Collection</h2>
         {products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map((product) => (
               <motion.div
                 key={product.id}
-                className="bg-white rounded-lg shadow-md overflow-hidden"
-                whileHover={{ scale: 1.05 }}
+                className="bg-white rounded-lg shadow-lg overflow-hidden"
+                whileHover={{ scale: 1.03 }}
                 transition={{ duration: 0.3 }}
               >
-                {/* Product card content */}
-                <img src={product.image} alt={product.name} className="w-full h-40 object-cover" />
+                <div className="relative">
+                  <img src={product.image} alt={product.name} className="w-full h-64 object-cover" />
+                  <button
+                    onClick={() => toggleWishlist(product.id)}
+                    className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md"
+                    aria-label={wishlist.includes(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                  >
+                    <FaHeart 
+                      size={20} 
+                      className={wishlist.includes(product.id) ? "text-pink-500" : "text-gray-400"}
+                    />
+                  </button>
+                </div>
                 <div className="p-4">
                   <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
                   <p className="text-gray-600 mb-2">{product.category}</p>
-                  <p className="text-gray-500 mb-2">{product.description}</p>
+                  <p className="text-gray-500 mb-4 h-12 overflow-hidden">{product.description}</p>
                   <div className="flex justify-between items-center">
                     <span className="text-pink-600 font-bold">${product.price}</span>
                     <button
                       onClick={() => addToCart(product, 1)}
-                      className="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600 transition-colors duration-300"
+                      className="bg-pink-500 text-white px-4 py-2 rounded-full hover:bg-pink-600 transition-colors duration-300"
                     >
                       Add to Cart
                     </button>
@@ -175,7 +286,7 @@ const HomePage = () => {
             ))}
           </div>
         ) : (
-          <p className="text-xl text-gray-600">No products available at the moment.</p>
+          <p className="text-xl text-gray-600 text-center">We're currently updating our collection. Please check back soon for our latest elegant pieces.</p>
         )}
       </main>
 
@@ -373,6 +484,13 @@ const HomePage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <footer className="bg-pink-100 py-8 mt-16">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-pink-600">&copy; 2024 Feminine Elegance. All rights reserved.</p>
+          <p className="mt-2 text-gray-600">Elevating your style with grace and sophistication.</p>
+        </div>
+      </footer>
     </div>
   );
 };
