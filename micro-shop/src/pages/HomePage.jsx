@@ -148,7 +148,7 @@ const HomePage = () => {
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white">
       <header className="bg-white shadow-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-3xl font-serif text-pink-600">Feminine Elegance</h1>
+          <h1 className="text-3xl font-serif text-pink-600">Shopping Elegance</h1>
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setIsBankDetailsOpen(true)}
@@ -487,7 +487,7 @@ const HomePage = () => {
 
       <footer className="bg-pink-100 py-8 mt-16">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-pink-600">&copy; 2024 Feminine Elegance. All rights reserved.</p>
+          <p className="text-pink-600">&copy; 2024 Shopping Elegance. All rights reserved.</p>
           <p className="mt-2 text-gray-600">Elevating your style with grace and sophistication.</p>
         </div>
       </footer>
