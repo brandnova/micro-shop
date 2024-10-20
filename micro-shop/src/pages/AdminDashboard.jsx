@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaBox, FaExchangeAlt, FaBars, FaTimes, FaPlus, FaEdit, FaTrash, FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import { FaBox, FaExchangeAlt, FaBars, FaTimes, FaPlus, FaEdit, FaTrash, FaSearch, FaChevronLeft, FaChevronRight, FaFileUpload } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import BankDetailsModal from './BankDetailsModal';
 
@@ -11,6 +11,7 @@ const AdminDashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -21,13 +22,25 @@ const AdminDashboard = () => {
   });
   const [editingProduct, setEditingProduct] = useState(null);
   const [showBankDetailsModal, setShowBankDetailsModal] = useState(false);
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);
 
   const itemsPerPage = 10;
+
+  const statusOptions = [
+    'pending',
+    'payment_uploaded',
+    'payment_confirmed',
+    'processing',
+    'shipped',
+    'delivered',
+    'cancelled'
+  ];
 
   useEffect(() => {
     fetchProducts();
     fetchTransactions();
-  }, [searchTerm, currentPage]);
+  }, [searchTerm, currentPage, statusFilter]);
 
   const fetchProducts = async () => {
     try {
@@ -40,7 +53,7 @@ const AdminDashboard = () => {
 
   const fetchTransactions = async () => {
     try {
-      const response = await axios.get(`/api/transactions/?search=${searchTerm}&page=${currentPage}&limit=${itemsPerPage}`);
+      const response = await axios.get(`/api/transactions/?search=${searchTerm}&page=${currentPage}&limit=${itemsPerPage}&status=${statusFilter}`);
       setTransactions(response.data);
     } catch (error) {
       console.error('Error fetching transactions:', error);
@@ -115,18 +128,38 @@ const AdminDashboard = () => {
     }));
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
+  const handleUpdateTransactionStatus = async (id, newStatus) => {
+    setPendingStatusUpdate({ id, newStatus });
+    setShowConfirmationDialog(true);
   };
 
-  const handleUpdateTransactionStatus = async (id, newStatus) => {
-    try {
-      await axios.patch(`/api/transactions/${id}/`, { status: newStatus });
-      fetchTransactions();
-    } catch (error) {
-      console.error('Error updating transaction status:', error);
+  const confirmStatusUpdate = async () => {
+    if (pendingStatusUpdate) {
+      try {
+        await axios.patch(`/api/transactions/${pendingStatusUpdate.id}/`, { status: pendingStatusUpdate.newStatus });
+        fetchTransactions();
+        setShowConfirmationDialog(false);
+        setPendingStatusUpdate(null);
+      } catch (error) {
+        console.error('Error updating transaction status:', error);
+      }
     }
   };
+
+  const handleViewPaymentProof = (paymentProofUrl) => {
+    window.open(paymentProofUrl, '_blank');
+  };
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilterChange = (e) => {
+    setStatusFilter(e.target.value);
+    setCurrentPage(1);
+  };
+
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
@@ -160,6 +193,39 @@ const AdminDashboard = () => {
       </div>
     );
   };
+
+  const ConfirmationDialog = ({ onConfirm, onCancel }) => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <motion.div
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
+        exit={{ scale: 0.9 }}
+        className="bg-white p-6 rounded-lg shadow-lg"
+      >
+        <h3 className="text-lg font-semibold mb-4">Confirm Status Update</h3>
+        <p>Are you sure you want to update the status of this transaction?</p>
+        <div className="mt-4 flex justify-end space-x-2">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600"
+          >
+            Confirm
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-r from-pink-50 to-purple-50">
@@ -346,24 +412,38 @@ const AdminDashboard = () => {
           {activeSection === 'transactions' && (
             <div>
               <h2 className="text-3xl font-bold text-pink-800 mb-6">View Transactions</h2>
-              <div className="mb-4">
+              <div className="mb-4 flex flex-col md:flex-row md:items-center md:space-x-4">
                 <input
                   type="text"
                   placeholder="Search transactions..."
                   value={searchTerm}
                   onChange={handleSearch}
-                  className="p-2 border rounded w-full md:w-1/2 focus:border-pink-500 focus:ring focus:ring-pink-200"
+                  className="p-2 border rounded w-full md:w-1/3 focus:border-pink-500 focus:ring focus:ring-pink-200 mb-2 md:mb-0"
                 />
+                <select
+                  value={statusFilter}
+                  onChange={handleStatusFilterChange}
+                  className="p-2 border rounded w-full md:w-1/4 focus:border-pink-500 focus:ring focus:ring-pink-200"
+                >
+                  <option value="all">All Statuses</option>
+                  {statusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
                   <thead className="bg-gradient-to-r from-pink-100 to-purple-100 text-pink-800">
                     <tr>
-                        <th className="p-3 text-left">Name</th>
-                        <th className="p-3 text-left">Email</th>
-                        <th className="p-3 text-left">Total Amount</th>
-                        <th className="p-3 text-left">Status</th>
-                        <th className="p-3 text-left">Actions</th>
+                      <th className="p-3 text-left">Tracking Number</th>
+                      <th className="p-3 text-left">Name</th>
+                      <th className="p-3 text-left">Email</th>
+                      <th className="p-3 text-left">Total Amount</th>
+                      <th className="p-3 text-left">Status</th>
+                      <th className="p-3 text-left">Payment Proof</th>
+                      <th className="p-3 text-left">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -375,20 +455,37 @@ const AdminDashboard = () => {
                         transition={{ duration: 0.3 }}
                         className="border-b border-pink-100 hover:bg-pink-50"
                       >
+                        <td className="p-3">{transaction.tracking_number}</td>
                         <td className="p-3">{transaction.name}</td>
                         <td className="p-3">{transaction.email}</td>
                         <td className="p-3">${transaction.total_amount}</td>
-                        <td className="p-3">{transaction.status}</td>
+                        <td className="p-3">{transaction.status.replace('_', ' ')}</td>
                         <td className="p-3">
-                            <select
+                          {transaction.payment_proof ? (
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => handleViewPaymentProof(transaction.payment_proof)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <FaFileUpload size={18} />
+                            </motion.button>
+                          ) : (
+                            'Not uploaded'
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <select
                             value={transaction.status}
                             onChange={(e) => handleUpdateTransactionStatus(transaction.id, e.target.value)}
                             className="p-2 border rounded"
-                            >
-                            <option value="pending">Pending</option>
-                            <option value="success">Success</option>
-                            <option value="failed">Failed</option>
-                            </select>
+                          >
+                            {statusOptions.map((status) => (
+                              <option key={status} value={status}>
+                                {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                              </option>
+                            ))}
+                          </select>
                         </td>
                       </motion.tr>
                     ))}
@@ -413,6 +510,18 @@ const AdminDashboard = () => {
       {showBankDetailsModal && (
         <BankDetailsModal onClose={() => setShowBankDetailsModal(false)} />
       )}
+
+      <AnimatePresence>
+        {showConfirmationDialog && (
+          <ConfirmationDialog
+            onConfirm={confirmStatusUpdate}
+            onCancel={() => {
+              setShowConfirmationDialog(false);
+              setPendingStatusUpdate(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
