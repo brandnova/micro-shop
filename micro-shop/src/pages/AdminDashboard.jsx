@@ -381,7 +381,7 @@ const AdminDashboard = () => {
                         <td className="p-3">{product.name}</td>
                         <td className="p-3">{product.category}</td>
                         <td className="p-3">{product.description}</td>
-                        <td className="p-3">${product.price}</td>
+                        <td className="p-3">₦{product.price}</td>
                         <td className="p-3">{product.quantity}</td>
                         <td className="p-3">
                           <motion.button
@@ -458,7 +458,7 @@ const AdminDashboard = () => {
                         <td className="p-3">{transaction.tracking_number}</td>
                         <td className="p-3">{transaction.name}</td>
                         <td className="p-3">{transaction.email}</td>
-                        <td className="p-3">${transaction.total_amount}</td>
+                        <td className="p-3">₦{transaction.total_amount}</td>
                         <td className="p-3">{transaction.status.replace('_', ' ')}</td>
                         <td className="p-3">
                           {transaction.payment_proof ? (
