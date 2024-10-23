@@ -59,11 +59,13 @@ class AdminToken(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def is_valid(self):
-        return (timezone.now() - self.created_at).days < 1
+        return (timezone.now() - self.created_at).days < 7
     
 
 class SiteSettings(models.Model):
     site_title = models.CharField(max_length=200, default="My E-commerce Site")
+    contact_email = models.EmailField(max_length=255, default="support@example.com")
+    contact_number = models.CharField(max_length=255, default="1234567890")
     main_color = models.CharField(max_length=7, default="#FF69B4")  
 
     def __str__(self):

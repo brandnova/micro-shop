@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { lighten } from 'polished';
-import Header from '../components/Header';
-import FeaturedCollections from '../components/FeaturedCollections';
-import ProductGrid from '../components/ProductGrid';
-import ProductModal from '../components/ProductModal';
-import CartModal from '../components/CartModal';
-import CheckoutModal from '../components/CheckoutModal';
-import BankDetailsModal from '../components/BankDetailsModal';
-import OrderConfirmationModal from '../components/OrderConfirmationModal';
-import OrderTrackingModal from '../components/OrderTrackingModal';
-import EasyStepsSection from '../components/EasyStepsSection';
-import OrderManagementSection from '../components/OrderManagementSection';
-import Footer from '../components/Footer';
-import ScrollToTopButton from '../components/ScrollToTopButton';
-import PaymentProofUploadModal from '../components/PaymentProofUploadModal';
-import LoadingSpinner from '../components/LoadingSpinner';
-import MessageDisplay from '../components/MessageDisplay';
+import Header from '../components/home/Header';
+import FeaturedCollections from '../components/home/FeaturedCollections';
+import ProductGrid from '../components/home/ProductGrid';
+import ProductModal from '../components/home/ProductModal';
+import CartModal from '../components/home/CartModal';
+import CheckoutModal from '../components/home/CheckoutModal';
+import BankDetailsModal from '../components/home/BankDetailsModal';
+import OrderConfirmationModal from '../components/home/OrderConfirmationModal';
+import OrderTrackingModal from '../components/home/OrderTrackingModal';
+import EasyStepsSection from '../components/home/EasyStepsSection';
+import OrderManagementSection from '../components/home/OrderManagementSection';
+import Footer from '../components/home/Footer';
+import ScrollToTopButton from '../components/home/ScrollToTopButton';
+import PaymentProofUploadModal from '../components/home/PaymentProofUploadModal';
+import LoadingSpinner from '../components/home/LoadingSpinner';
+import MessageDisplay from '../components/home/MessageDisplay';
 import { useCart } from '../hooks/useCart';
 import { useScrollToTop } from '../hooks/useScrollToTop';
 
@@ -57,7 +57,9 @@ const HomePage = () => {
 
   const [siteSettings, setSiteSettings] = useState({
     site_title: 'My E-commerce Site',
-    main_color: '#000000'
+    main_color: '#000000',
+    contact_email: 'support@example.com',
+    contact_number: '1234567890'
   });
 
   const handleAddToCart = (product) => {
@@ -220,7 +222,11 @@ const HomePage = () => {
         cartItemsCount={cartItems.length}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenBankDetails={() => setIsBankDetailsOpen(true)}
-        siteTitle={siteSettings.site_title}
+        siteSettings={{
+          title: siteSettings.site_title,
+          email: siteSettings.contact_email,
+          phone: siteSettings.contact_number
+        }}
         mainColor={mainColor}
         lighterShade={lighterShade}
       />
@@ -358,7 +364,11 @@ const HomePage = () => {
       />
 
       <Footer 
-        siteTitle={siteSettings.site_title}
+        siteSettings={{
+          title: siteSettings.site_title,
+          email: siteSettings.contact_email,
+          phone: siteSettings.contact_number
+        }}
         mainColor={mainColor}
         lightenedShade={lightenedShade}
       />

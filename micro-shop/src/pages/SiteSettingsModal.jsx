@@ -10,6 +10,8 @@ const SiteSettingsModal = ({ onClose }) => {
     hero_subtitle: '',
     featured_collection_title: '',
     main_color: '#000000',
+    contact_email: '',
+    contact_number: ''
   });
 
   useEffect(() => {
@@ -55,11 +57,11 @@ const SiteSettingsModal = ({ onClose }) => {
         initial={{ scale: 0.9 }}
         animate={{ scale: 1 }}
         exit={{ scale: 0.9 }}
-        className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md"
+        className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto"
       >
         <h2 className="text-2xl font-bold text-pink-800 mb-4">Site Settings</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
             <label className="block text-sm font-medium text-gray-700">Site Title</label>
             <input
               type="text"
@@ -69,15 +71,41 @@ const SiteSettingsModal = ({ onClose }) => {
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500"
             />
           </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Main Color</label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Contact Email</label>
+            <input
+              type="email"
+              name="contact_email"
+              value={settings.contact_email}
+              onChange={handleInputChange}
+              placeholder="support@example.com"
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Contact Phone</label>
+            <input
+              type="tel"
+              name="contact_number"
+              value={settings.contact_number}
+              onChange={handleInputChange}
+              placeholder="1234567890"
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Main Color</label>
             <SketchPicker
               color={settings.main_color}
               onChangeComplete={handleColorChange}
               className="mx-auto"
             />
           </div>
-          <div className="flex justify-end space-x-2">
+
+          <div className="flex justify-end space-x-2 pt-4">
             <button
               type="button"
               onClick={onClose}

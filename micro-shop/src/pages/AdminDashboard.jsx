@@ -1,8 +1,18 @@
+// src/pages/AdminDashboard.jsx (Updated main component)
 import React, { useState, useEffect } from 'react';
-import { FaBox, FaExchangeAlt, FaBars, FaTimes, FaPlus, FaEdit, FaTrash, FaSearch, FaChevronLeft, FaChevronRight, FaFileUpload, FaCog } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import BankDetailsModal from './BankDetailsModal';
+
+// Import components
+import Sidebar from '../components/admin/Sidebar';
+import ProductForm from '../components/admin/ProductForm';
+import ProductsTable from '../components/admin/ProductsTable';
+import ProductsSearch from '../components/admin/ProductsSearch';
+import TransactionsTable from '../components/admin/TransactionsTable';
+import TransactionsFilter from '../components/admin/TransactionsFilter';
+import Pagination from '../components/admin/Pagination';
+import ConfirmationDialog from '../components/admin/ConfirmationDialog';
+import BankDetailsModal from '../components/admin/BankDetailsModal';
 import SiteSettingsModal from './SiteSettingsModal';
 
 const AdminDashboard = () => {
@@ -26,6 +36,11 @@ const AdminDashboard = () => {
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
   const [showSiteSettingsModal, setShowSiteSettingsModal] = useState(false);
   const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);
+  const [allTransactions, setAllTransactions] = useState([]); 
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [allProducts, setAllProducts] = useState([]); 
+  const [filteredProducts, setFilteredProducts] = useState([]);
 
   const itemsPerPage = 10;
 
@@ -42,25 +57,65 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchProducts();
     fetchTransactions();
-  }, [searchTerm, currentPage, statusFilter]);
+  }, [currentPage, searchTerm, statusFilter]);
 
+  const handleApplyFilters = () => {
+    setCurrentPage(1); 
+    fetchTransactions();
+  };
+
+  // Modify the fetchProducts function to store all products
   const fetchProducts = async () => {
     try {
       const response = await axios.get(`/api/products/?page=${currentPage}&limit=${itemsPerPage}`);
-      setProducts(response.data);
+      setAllProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
     }
   };
 
+  // Add effect for product filtering
+  useEffect(() => {
+    const filtered = allProducts.filter(product => {
+      const searchLower = productSearchTerm.toLowerCase();
+      return (
+        product.name.toLowerCase().includes(searchLower) ||
+        product.category.toLowerCase().includes(searchLower) ||
+        product.description.toLowerCase().includes(searchLower)
+      );
+    });
+    setFilteredProducts(filtered);
+  }, [productSearchTerm, allProducts]);
+
   const fetchTransactions = async () => {
     try {
-      const response = await axios.get(`/api/transactions/?search=${searchTerm}&page=${currentPage}&limit=${itemsPerPage}&status=${statusFilter}`);
-      setTransactions(response.data);
+      const response = await axios.get('/api/transactions/');
+      setAllTransactions(response.data);
     } catch (error) {
       console.error('Error fetching transactions:', error);
     }
   };
+
+  // Apply filters whenever search term or status filter changes
+  useEffect(() => {
+    const filtered = allTransactions.filter(transaction => {
+      const matchesSearch = 
+        transaction.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        transaction.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        transaction.tracking_number.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+    
+    setFilteredTransactions(filtered);
+  }, [searchTerm, statusFilter, allTransactions]);
+
+  // Fetch all transactions only when component mounts
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
@@ -152,130 +207,16 @@ const AdminDashboard = () => {
     window.open(paymentProofUrl, '_blank');
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleStatusFilterChange = (e) => {
-    setStatusFilter(e.target.value);
-    setCurrentPage(1);
-  };
-
-
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-  };
-
-  const renderPagination = (totalItems) => {
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    return (
-      <div className="flex justify-center items-center mt-4">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="mx-1 px-3 py-1 rounded bg-pink-200 text-pink-800 disabled:opacity-50"
-        >
-          <FaChevronLeft />
-        </motion.button>
-        <span className="mx-2">
-          Page {currentPage} of {totalPages}
-        </span>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="mx-1 px-3 py-1 rounded bg-pink-200 text-pink-800 disabled:opacity-50"
-        >
-          <FaChevronRight />
-        </motion.button>
-      </div>
-    );
-  };
-
-  const ConfirmationDialog = ({ onConfirm, onCancel }) => (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    >
-      <motion.div
-        initial={{ scale: 0.9 }}
-        animate={{ scale: 1 }}
-        exit={{ scale: 0.9 }}
-        className="bg-white p-6 rounded-lg shadow-lg"
-      >
-        <h3 className="text-lg font-semibold mb-4">Confirm Status Update</h3>
-        <p>Are you sure you want to update the status of this transaction?</p>
-        <div className="mt-4 flex justify-end space-x-2">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600"
-          >
-            Confirm
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-r from-pink-50 to-purple-50">
-      {/* Sidebar */}
-      <motion.div
-        initial={{ width: sidebarOpen ? 256 : 55 }}
-        animate={{ width: sidebarOpen ? 256 : 55 }}
-        transition={{ duration: 0.3 }}
-        className="bg-gradient-to-b from-pink-600 to-purple-700 text-white"
-      >
-        <div className="p-4 flex justify-between items-center">
-          <h2 className={`${sidebarOpen ? 'block' : 'hidden'} text-2xl font-bold`}>Admin</h2>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white focus:outline-none">
-            {sidebarOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
-          </button>
-        </div>
-        <nav className="mt-8">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveSection('products')}
-            className={`flex items-center w-full p-4 ${activeSection === 'products' ? 'bg-pink-700' : 'hover:bg-pink-500'}`}
-          >
-            <FaBox size={20} />
-            {sidebarOpen && <span className="ml-4">Manage Products</span>}
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveSection('transactions')}
-            className={`flex items-center w-full p-4 ${activeSection === 'transactions' ? 'bg-pink-700' : 'hover:bg-pink-500'}`}
-          >
-            <FaExchangeAlt size={20} />
-            {sidebarOpen && <span className="ml-4">View Transactions</span>}
-          </motion.button>
-        </nav>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowSiteSettingsModal(true)}
-          className="flex items-center w-full p-4 hover:bg-pink-500"
-        >
-          <FaCog size={20} />
-          {sidebarOpen && <span className="ml-4">Site Settings</span>}
-        </motion.button>
-      </motion.div>
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        setShowSiteSettingsModal={setShowSiteSettingsModal}
+      />
 
-      {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-4 md:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -285,225 +226,54 @@ const AdminDashboard = () => {
           {activeSection === 'products' && (
             <div>
               <h2 className="text-3xl font-bold text-pink-800 mb-6">Manage Products</h2>
-              <form onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct} className="mb-8 bg-white p-4 md:p-6 rounded-lg shadow-md">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Product Name"
-                    className="p-2 border rounded focus:border-pink-500 focus:ring focus:ring-pink-200 w-full"
-                    required
-                  />
-                  <input
-                    type="text"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    placeholder="Category"
-                    className="p-2 border rounded focus:border-pink-500 focus:ring focus:ring-pink-200 w-full"
-                    required
-                  />
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    placeholder="Price"
-                    className="p-2 border rounded focus:border-pink-500 focus:ring focus:ring-pink-200 w-full"
-                    required
-                  />
-                  <input
-                    type="number"
-                    name="quantity"
-                    value={formData.quantity}
-                    onChange={handleInputChange}
-                    placeholder="Quantity"
-                    className="p-2 border rounded focus:border-pink-500 focus:ring focus:ring-pink-200 w-full"
-                    required
-                  />
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Description"
-                    className="p-2 border rounded col-span-1 md:col-span-2 focus:border-pink-500 focus:ring focus:ring-pink-200 w-full"
-                    required
-                  />
-                  <input
-                    type="file"
-                    name="image"
-                    onChange={handleInputChange}
-                    className="p-2 border rounded col-span-1 md:col-span-2 focus:border-pink-500 focus:ring focus:ring-pink-200 w-full"
-                    accept="image/*"
-                  />
-                </div>
-                <div className="mt-4 flex flex-wrap gap-4">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    type="submit"
-                    className="bg-gradient-to-r from-pink-500 to-purple-600 text-white py-2 px-4 rounded hover:from-pink-600 hover:to-purple-700 transition duration-300"
-                  >
-                    {editingProduct ? 'Update Product' : 'Add Product'}
-                  </motion.button>
-                  {editingProduct && (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      type="button"
-                      onClick={() => {
-                        setEditingProduct(null);
-                        setFormData({ name: '', category: '', description: '', price: '', image: null, quantity: 0 });
-                      }}
-                      className="bg-gray-300 text-gray-800 py-2 px-4 rounded hover:bg-gray-400 transition duration-300"
-                    >
-                      Cancel Edit
-                    </motion.button>
-                  )}
-                </div>
-              </form>
-              <div className="overflow-x-auto">
-                <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-                  <thead className="bg-gradient-to-r from-pink-100 to-purple-100 text-pink-800">
-                    <tr>
-                      <th className="p-3 text-left">Image</th>
-                      <th className="p-3 text-left">Name</th>
-                      <th className="p-3 text-left">Category</th>
-                      <th className="p-3 text-left">Description</th>
-                      <th className="p-3 text-left">Price</th>
-                      <th className="p-3 text-left">Quantity</th>
-                      <th className="p-3 text-left">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((product) => (
-                      <motion.tr
-                        key={product.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className="border-b border-pink-100 hover:bg-pink-50"
-                      >
-                        <td className="p-3">
-                          <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded" />
-                        </td>
-                        <td className="p-3">{product.name}</td>
-                        <td className="p-3">{product.category}</td>
-                        <td className="p-3">{product.description}</td>
-                        <td className="p-3">₦{product.price}</td>
-                        <td className="p-3">{product.quantity}</td>
-                        <td className="p-3">
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => handleEditProduct(product)}
-                            className="mr-2 text-blue-600 hover:text-blue-800"
-                          >
-                            <FaEdit size={18} />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => handleDeleteProduct(product.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <FaTrash size={18} />
-                          </motion.button>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {renderPagination(products.length)}
+              <ProductForm
+                formData={formData}
+                handleInputChange={handleInputChange}
+                handleSubmit={editingProduct ? handleUpdateProduct : handleAddProduct}
+                editingProduct={editingProduct}
+                setEditingProduct={setEditingProduct}
+                setFormData={setFormData}
+              />
+              <ProductsSearch 
+                searchTerm={productSearchTerm}
+                onSearchChange={setProductSearchTerm}
+              />
+              <ProductsTable
+                products={filteredProducts}
+                handleEditProduct={handleEditProduct}
+                handleDeleteProduct={handleDeleteProduct}
+              />
+              <Pagination
+                currentPage={currentPage}
+                totalItems={filteredProducts.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
             </div>
           )}
+
           {activeSection === 'transactions' && (
             <div>
               <h2 className="text-3xl font-bold text-pink-800 mb-6">View Transactions</h2>
-              <div className="mb-4 flex flex-col md:flex-row md:items-center md:space-x-4">
-                <input
-                  type="text"
-                  placeholder="Search transactions..."
-                  value={searchTerm}
-                  onChange={handleSearch}
-                  className="p-2 border rounded w-full md:w-1/3 focus:border-pink-500 focus:ring focus:ring-pink-200 mb-2 md:mb-0"
-                />
-                <select
-                  value={statusFilter}
-                  onChange={handleStatusFilterChange}
-                  className="p-2 border rounded w-full md:w-1/4 focus:border-pink-500 focus:ring focus:ring-pink-200"
-                >
-                  <option value="all">All Statuses</option>
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-                  <thead className="bg-gradient-to-r from-pink-100 to-purple-100 text-pink-800">
-                    <tr>
-                      <th className="p-3 text-left">Tracking Number</th>
-                      <th className="p-3 text-left">Name</th>
-                      <th className="p-3 text-left">Email</th>
-                      <th className="p-3 text-left">Total Amount</th>
-                      <th className="p-3 text-left">Status</th>
-                      <th className="p-3 text-left">Payment Proof</th>
-                      <th className="p-3 text-left">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.map((transaction) => (
-                      <motion.tr
-                        key={transaction.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className="border-b border-pink-100 hover:bg-pink-50"
-                      >
-                        <td className="p-3">{transaction.tracking_number}</td>
-                        <td className="p-3">{transaction.name}</td>
-                        <td className="p-3">{transaction.email}</td>
-                        <td className="p-3">₦{transaction.total_amount}</td>
-                        <td className="p-3">{transaction.status.replace('_', ' ')}</td>
-                        <td className="p-3">
-                          {transaction.payment_proof ? (
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => handleViewPaymentProof(transaction.payment_proof)}
-                              className="text-blue-600 hover:text-blue-800"
-                            >
-                              <FaFileUpload size={18} />
-                            </motion.button>
-                          ) : (
-                            'Not uploaded'
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <select
-                            value={transaction.status}
-                            onChange={(e) => handleUpdateTransactionStatus(transaction.id, e.target.value)}
-                            className="p-2 border rounded"
-                          >
-                            {statusOptions.map((status) => (
-                              <option key={status} value={status}>
-                                {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {renderPagination(transactions.length)}
+              <TransactionsFilter
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+                statusOptions={statusOptions}
+                onSearchChange={setSearchTerm}
+                onStatusFilterChange={setStatusFilter}
+              />
+              <TransactionsTable
+                transactions={filteredTransactions} // Use filtered transactions here
+                statusOptions={statusOptions}
+                handleUpdateTransactionStatus={handleUpdateTransactionStatus}
+                handleViewPaymentProof={handleViewPaymentProof}
+              />
+              <Pagination
+                currentPage={currentPage}
+                totalItems={filteredTransactions.length} // Update pagination count
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
             </div>
           )}
 
