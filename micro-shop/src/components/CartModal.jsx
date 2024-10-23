@@ -1,9 +1,8 @@
-// src/components/CartModal.jsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 
-const CartModal = ({ isOpen, onClose, cartItems, onRemoveItem, onUpdateQuantity, totalPrice, onCheckout }) => {
+const CartModal = ({ isOpen, onClose, cartItems, onRemoveItem, onUpdateQuantity, totalPrice, onCheckout, mainColor, lightenedShade, lighterShade }) => {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -22,7 +21,7 @@ const CartModal = ({ isOpen, onClose, cartItems, onRemoveItem, onUpdateQuantity,
           >
             <div className="p-6 h-full flex flex-col">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-serif text-pink-600">Your Cart</h2>
+                <h2 className="text-2xl font-serif" style={{ color: mainColor }}>Your Cart</h2>
                 <button
                   onClick={onClose}
                   className="text-gray-500 hover:text-gray-700 transition-colors duration-300"
@@ -41,6 +40,10 @@ const CartModal = ({ isOpen, onClose, cartItems, onRemoveItem, onUpdateQuantity,
                       item={item}
                       onRemove={() => onRemoveItem(item.id)}
                       onUpdateQuantity={(newQuantity) => onUpdateQuantity(item.id, newQuantity)}
+                      mainColor={mainColor}
+                      lightenedShade={lightenedShade}
+                      lighterShade={lighterShade}
+
                     />
                   ))
                 )}
@@ -49,7 +52,8 @@ const CartModal = ({ isOpen, onClose, cartItems, onRemoveItem, onUpdateQuantity,
                 <p className="text-xl font-semibold mb-4">Total: ₦{totalPrice}</p>
                 <button
                   onClick={onCheckout}
-                  className="w-full bg-pink-500 text-white py-3 rounded-full hover:bg-pink-600 transition-colors duration-300"
+                  className="w-full text-white py-3 rounded-full hover:opacity-90 transition-colors duration-300"
+                  style={{ backgroundColor: mainColor }}
                   disabled={cartItems.length === 0}
                 >
                   Proceed to Checkout
@@ -63,7 +67,7 @@ const CartModal = ({ isOpen, onClose, cartItems, onRemoveItem, onUpdateQuantity,
   );
 };
 
-const CartItem = ({ item, onRemove, onUpdateQuantity }) => {
+const CartItem = ({ item, onRemove, onUpdateQuantity, mainColor, lightenedShade, lighterShade }) => {
   return (
     <div className="flex items-center mb-4">
       <img
@@ -73,18 +77,20 @@ const CartItem = ({ item, onRemove, onUpdateQuantity }) => {
       />
       <div className="flex-grow">
         <h3 className="font-semibold">{item.name}</h3>
-        <p className="text-gray-600">${item.price}</p>
+        <p className="text-gray-600">₦{item.price}</p>
         <div className="flex items-center mt-2">
           <button
             onClick={() => onUpdateQuantity(Math.max(1, item.quantity - 1))}
-            className="bg-gray-200 px-2 py-1 rounded-l"
+            className="px-2 py-1 rounded-l"
+            style={{ backgroundColor: lightenedShade }}
           >
             -
           </button>
-          <span className="bg-gray-100 px-4 py-1">{item.quantity}</span>
+          <span className="px-4 py-1" style={{ backgroundColor: lighterShade }}>{item.quantity}</span>
           <button
             onClick={() => onUpdateQuantity(item.quantity + 1)}
-            className="bg-gray-200 px-2 py-1 rounded-r"
+            className="px-2 py-1 rounded-r"
+            style={{ backgroundColor: lightenedShade }}
           >
             +
           </button>
@@ -92,7 +98,8 @@ const CartItem = ({ item, onRemove, onUpdateQuantity }) => {
       </div>
       <button
         onClick={onRemove}
-        className="text-red-500 hover:text-red-700 transition-colors duration-300"
+        className="hover:opacity-75 transition-colors duration-300"
+        style={{ color: mainColor }}
         aria-label={`Remove ${item.name} from cart`}
       >
         Remove

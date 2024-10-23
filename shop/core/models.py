@@ -60,3 +60,14 @@ class AdminToken(models.Model):
 
     def is_valid(self):
         return (timezone.now() - self.created_at).days < 1
+    
+
+class SiteSettings(models.Model):
+    site_title = models.CharField(max_length=200, default="My E-commerce Site")
+    main_color = models.CharField(max_length=7, default="#FF69B4")  
+
+    def __str__(self):
+        return "Site Settings"
+
+    class Meta:
+        verbose_name_plural = "Site Settings"

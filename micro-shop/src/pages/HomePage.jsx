@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { lighten } from 'polished';
 import Header from '../components/Header';
 import FeaturedCollections from '../components/FeaturedCollections';
 import ProductGrid from '../components/ProductGrid';
@@ -24,7 +25,6 @@ const HomePage = () => {
   const [heroProducts, setHeroProducts] = useState([]);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [wishlist, setWishlist] = useState([]);
   const [trackingNumber, setTrackingNumber] = useState('');
   const [orderStatus, setOrderStatus] = useState(null);
   const [bankDetails, setBankDetails] = useState({});
@@ -35,7 +35,6 @@ const HomePage = () => {
 
   const {
     cartItems,
-    setCartItems,
     addToCart,
     removeFromCart,
     updateQuantity,
@@ -56,6 +55,11 @@ const HomePage = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isLoading, setIsLoading] = useState({});
 
+  const [siteSettings, setSiteSettings] = useState({
+    site_title: 'My E-commerce Site',
+    main_color: '#000000'
+  });
+
   const handleAddToCart = (product) => {
     setIsLoading(prev => ({ ...prev, [product.id]: true }));
     addToCart(product, 1);
@@ -64,15 +68,30 @@ const HomePage = () => {
     }, 1000);
   };
 
+  const mainColor = siteSettings.main_color;
+  const lightenedShade = lighten(0.47, mainColor);
+  const lighterShade = lighten(0.6, mainColor);
+
   useEffect(() => {
     fetchProducts();
     fetchBankDetails();
+    fetchSiteSettings();
     window.addEventListener('popstate', handleUrlChange);
     handleUrlChange();
     return () => {
       window.removeEventListener('popstate', handleUrlChange);
     };
   }, []);
+
+  const fetchSiteSettings = async () => {
+    try {
+      const response = await axios.get('/api/site-settings/');
+      setSiteSettings(response.data);
+    } catch (error) {
+      console.error('Error fetching site settings:', error);
+      setMessage({ type: 'error', content: 'Failed to fetch site settings. Using default values.' });
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -185,24 +204,25 @@ const HomePage = () => {
     }
   };
 
-  const toggleWishlist = (productId) => {
-    setWishlist(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
-  };
-
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <LoadingSpinner 
+        mainColor={mainColor}
+        lighterShade={lighterShade}
+      />
+    );
   }
+  
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white">
+    <div className="min-h-screen" style={{ backgroundColor: lighterShade }}>
       <Header 
         cartItemsCount={cartItems.length}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenBankDetails={() => setIsBankDetailsOpen(true)}
+        siteTitle={siteSettings.site_title}
+        mainColor={mainColor}
+        lighterShade={lighterShade}
       />
 
       <main className="container mx-auto px-4 py-16">
@@ -210,21 +230,33 @@ const HomePage = () => {
           <MessageDisplay
             type={message.type}
             message={message.content}
+            mainColor={mainColor}
             onClose={() => setMessage(null)}
           />
         )}
 
         {heroProducts.length > 0 && (
-          <FeaturedCollections heroProducts={heroProducts} />
+          <FeaturedCollections 
+            heroProducts={heroProducts} 
+            mainColor={mainColor}
+            lightenedShade={lightenedShade}
+            lighterShade={lighterShade}
+          />
         )}
         
-        <EasyStepsSection />
+        <EasyStepsSection 
+          mainColor={mainColor}
+          lightenedShade={lightenedShade}
+          lighterShade={lighterShade}
+        />
         
         <OrderManagementSection 
           trackingNumber={trackingNumber}
           setTrackingNumber={setTrackingNumber}
           handleTrackOrder={handleTrackOrder}
           setIsUploadOpen={setIsUploadOpen}
+          mainColor={mainColor}
+          lightenedShade={lightenedShade}
         />
 
         <ProductGrid 
@@ -235,6 +267,9 @@ const HomePage = () => {
           onAddToCart={handleAddToCart}
           isLoading={isLoading}
           onPageChange={setCurrentPage}
+          mainColor={mainColor}
+          lightenedShade={lightenedShade}
+          lighterShade={lighterShade}
         />
       </main>
 
@@ -244,6 +279,8 @@ const HomePage = () => {
         addToCart={handleAddToCart}
         loading={isLoading}
         isOpen={isModalOpen}
+        mainColor={mainColor}
+        lightenedShade={lightenedShade}
       />
 
       <CartModal 
@@ -257,6 +294,9 @@ const HomePage = () => {
           setIsCheckoutOpen(true);
           setIsCartOpen(false);
         }}
+        mainColor={mainColor}
+        lightenedShade={lightenedShade}
+        lighterShade={lighterShade}
       />
 
       <CheckoutModal 
@@ -271,12 +311,16 @@ const HomePage = () => {
         isOrderConfirmed={isOrderConfirmed}
         bankDetails={bankDetails}
         trackingNumber={trackingNumber}
+        mainColor={mainColor}
+        lightenedShade={lightenedShade}
       />
 
       <BankDetailsModal 
         isOpen={isBankDetailsOpen}
         onClose={() => setIsBankDetailsOpen(false)}
         bankDetails={bankDetails}
+        mainColor={mainColor}
+        lightenedShade={lightenedShade}
       />
 
       <OrderConfirmationModal 
@@ -287,25 +331,37 @@ const HomePage = () => {
         }}
         trackingNumber={trackingNumber}
         bankDetails={bankDetails}
+        mainColor={mainColor}
+        lightenedShade={lightenedShade}
       />
 
       <OrderTrackingModal 
         isOpen={isTrackingOpen}
         onClose={() => setIsTrackingOpen(false)}
         orderStatus={orderStatus}
+        mainColor={mainColor}
+        lightenedShade={lightenedShade}
+        lighterShade={lighterShade}
       />
 
       <PaymentProofUploadModal 
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
+        mainColor={mainColor}
+        lightenedShade={lightenedShade}
       />
 
       <ScrollToTopButton 
         isVisible={isScrollButtonVisible}
         onClick={scrollToTop}
+        mainColor={mainColor}
       />
 
-      <Footer />
+      <Footer 
+        siteTitle={siteSettings.site_title}
+        mainColor={mainColor}
+        lightenedShade={lightenedShade}
+      />
     </div>
   );
 };

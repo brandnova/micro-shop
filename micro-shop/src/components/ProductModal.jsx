@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import ShareButtons from './ShareButtons';
 
-const ProductModal = ({ product, onClose, addToCart, loading, isOpen }) => {
+const ProductModal = ({ product, onClose, addToCart, loading, isOpen, mainColor }) => {
   if (!product || !isOpen) return null;
 
   const handleAddToCart = () => {
@@ -27,10 +27,10 @@ const ProductModal = ({ product, onClose, addToCart, loading, isOpen }) => {
           >
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-300"
+              className="absolute top-4 right-4 text-gray-500 p-3 rounded-full bg-white hover:text-gray-700 transition-colors duration-300"
               aria-label="Close modal"
             >
-              <FaTimes size={24} />
+              <FaTimes style={{ color: mainColor }} size={24} />
             </button>
             
             <div className="flex flex-col md:flex-row">
@@ -38,21 +38,22 @@ const ProductModal = ({ product, onClose, addToCart, loading, isOpen }) => {
                 <img src={product.image} alt={product.name} className="w-full h-auto object-cover rounded-lg" />
               </div>
               <div className="md:w-1/2 md:pl-8">
-                <h2 className="text-2xl font-serif text-pink-600 mb-4">{product.name}</h2>
+                <h2 className="text-2xl font-serif mb-4" style={{ color: mainColor }}>{product.name}</h2>
                 <p className="text-gray-600 mb-2">{product.category}</p>
                 <p className="text-gray-700 mb-4">{product.description}</p>
-                <p className="text-pink-600 font-bold text-xl mb-4">₦{product.price}</p>
+                <p className="font-bold text-xl mb-4" style={{ color: mainColor }}>₦{product.price}</p>
                 <button
                   onClick={handleAddToCart}
                   disabled={loading[product.id]}
-                  className="w-full bg-pink-500 text-white py-2 rounded-full hover:bg-pink-600 transition-colors duration-300 disabled:bg-pink-300"
+                  className="w-full text-white py-2 rounded-full hover:opacity-90 transition-colors duration-300 disabled:opacity-50"
+                  style={{ backgroundColor: mainColor }}
                 >
                   {loading[product.id] ? 'Adding...' : 'Add to Cart'}
                 </button>
                 
                 <div className="mt-8">
                   <h3 className="text-lg font-semibold mb-2">Share this product</h3>
-                  <ShareButtons product={product} />
+                  <ShareButtons product={product} mainColor={mainColor} />
                 </div>
               </div>
             </div>

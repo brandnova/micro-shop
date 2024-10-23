@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaFacebook, FaTwitter, FaWhatsapp, FaLink } from 'react-icons/fa';
 
-const ShareButtons = ({ product }) => {
+const ShareButtons = ({ product, mainColor }) => {
   const shareUrl = `${window.location.origin}${window.location.pathname}?productId=${product.id}`;
   const shareText = `Check out this amazing product: ${product.name}`;
 
@@ -54,7 +54,7 @@ const ShareButtons = ({ product }) => {
       <button onClick={copyLink} className="text-gray-600 hover:text-gray-800" aria-label="Copy link">
         <FaLink size={24} />
       </button>
-      <button onClick={shareNative} className="bg-pink-500 text-white px-4 py-2 rounded-full hover:bg-pink-600 transition-colors duration-300">
+      <button onClick={shareNative} style={{ backgroundColor: mainColor }} className="text-white px-4 py-2 rounded-full hover:bg-pink-600 transition-colors duration-300">
         Share
       </button>
     </div>

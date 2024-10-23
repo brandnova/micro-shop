@@ -1,8 +1,9 @@
+// src/components/ProductGrid.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 
-const ProductGrid = ({ products, onProductClick, onAddToCart, isLoading }) => {
+const ProductGrid = ({ products, onProductClick, onAddToCart, isLoading, mainColor, lightenedShade, lighterShade }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -35,7 +36,7 @@ const ProductGrid = ({ products, onProductClick, onAddToCart, isLoading }) => {
 
   return (
     <section className="relative pb-16">
-      <h2 className="text-3xl font-serif text-pink-600 mb-8">Our Exquisite Collection</h2>
+      <h2 className="text-3xl font-serif mb-8" style={{ color: mainColor }}>Our Exquisite Collection</h2>
       
       <div className="sticky top-20 z-50">
         <motion.div
@@ -49,7 +50,8 @@ const ProductGrid = ({ products, onProductClick, onAddToCart, isLoading }) => {
               closed: { width: "56px", right: "16px" }
             }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="absolute top-2 h-10 bg-pink-100 rounded-full overflow-hidden flex items-center"
+            className="absolute top-2 border h-10 rounded-full overflow-hidden flex items-center"
+            style={{ backgroundColor: lightenedShade, borderColor: mainColor }}
           >
             <AnimatePresence>
               {isSearchOpen && (
@@ -63,6 +65,7 @@ const ProductGrid = ({ products, onProductClick, onAddToCart, isLoading }) => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full h-full pl-4 pr-12 bg-transparent border-none focus:outline-none"
+                  style={{ color: mainColor }}
                 />
               )}
             </AnimatePresence>
@@ -70,7 +73,8 @@ const ProductGrid = ({ products, onProductClick, onAddToCart, isLoading }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSearchToggle}
-              className="absolute right-0 h-10 w-14 bg-pink-500 text-white rounded-full flex items-center justify-center"
+              className="absolute right-0 h-10 w-14 text-white rounded-full flex items-center justify-center"
+              style={{ backgroundColor: mainColor }}
               aria-label={isSearchOpen ? "Close search" : "Open search"}
             >
               <AnimatePresence mode="wait">
@@ -99,6 +103,8 @@ const ProductGrid = ({ products, onProductClick, onAddToCart, isLoading }) => {
                 onClick={() => onProductClick(product)}
                 onAddToCart={() => onAddToCart(product)}
                 isLoading={isLoading[product.id]}
+                mainColor={mainColor}
+                lightenedShade={lightenedShade}
               />
             ))}
           </div>
@@ -106,16 +112,18 @@ const ProductGrid = ({ products, onProductClick, onAddToCart, isLoading }) => {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
+            mainColor={mainColor}
+            lightenedShade={lightenedShade}
           />
         </>
       ) : (
-        <p className="text-xl text-gray-600 text-center mt-8">No products found. Please try a different search term.</p>
+        <p className="text-xl text-center mt-8" style={{ color: mainColor }}>No products found. Please try a different search term.</p>
       )}
     </section>
   );
 };
 
-const ProductCard = ({ product, onClick, onAddToCart, isLoading }) => {
+const ProductCard = ({ product, onClick, onAddToCart, isLoading, mainColor, lightenedShade }) => {
   return (
     <motion.div
       className="bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer"
@@ -127,11 +135,11 @@ const ProductCard = ({ product, onClick, onAddToCart, isLoading }) => {
         <img src={product.image} alt={product.name} className="w-full h-64 object-cover" />
       </div>
       <div className="p-4">
-        <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
+        <h3 className="text-xl font-semibold mb-2" style={{ color: mainColor }}>{product.name}</h3>
         <p className="text-gray-600 mb-2">{product.category}</p>
         <p className="text-gray-500 mb-4 h-12 overflow-hidden">{product.description}</p>
         <div className="flex justify-between items-center">
-          <span className="text-pink-600 font-bold">₦{product.price}</span>
+          <span className="font-bold" style={{ color: mainColor }}>₦{product.price}</span>
           <span className="text-gray-600">Quantity: {product.quantity}</span>
         </div>
         <div className="mt-4">
@@ -140,7 +148,11 @@ const ProductCard = ({ product, onClick, onAddToCart, isLoading }) => {
               e.stopPropagation();
               onAddToCart();
             }}
-            className="w-full bg-pink-500 text-white px-4 py-2 rounded-full hover:bg-pink-600 transition-colors duration-300 disabled:bg-pink-300"
+            className="w-full text-white px-4 py-2 rounded-full transition-colors duration-300 disabled:opacity-50"
+            style={{ 
+              backgroundColor: isLoading || product.quantity === 0 ? lightenedShade : mainColor,
+              color: isLoading || product.quantity === 0 ? mainColor : 'white'
+            }}
             disabled={isLoading || product.quantity === 0}
           >
             {isLoading ? 'Adding...' : product.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
@@ -151,7 +163,7 @@ const ProductCard = ({ product, onClick, onAddToCart, isLoading }) => {
   );
 };
 
-const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+const Pagination = ({ currentPage, totalPages, onPageChange, mainColor, lightenedShade }) => {
   const pageNumbers = [];
   for (let i = 1; i <= totalPages; i++) {
     pageNumbers.push(i);
@@ -164,7 +176,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
           <button
             onClick={() => onPageChange(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+            className="mx-1 px-3 py-1 rounded disabled:opacity-50"
+            style={{ backgroundColor: lightenedShade, color: mainColor }}
           >
             &laquo;
           </button>
@@ -173,9 +186,11 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
           <li key={number}>
             <button
               onClick={() => onPageChange(number)}
-              className={`mx-1 px-3 py-1 rounded ${
-                currentPage === number ? 'bg-pink-500 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
+              className="mx-1 px-3 py-1 rounded"
+              style={{
+                backgroundColor: currentPage === number ? mainColor : lightenedShade,
+                color: currentPage === number ? 'white' : mainColor
+              }}
             >
               {number}
             </button>
@@ -185,7 +200,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
           <button
             onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
-            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+            className="mx-1 px-3 py-1 rounded disabled:opacity-50"
+            style={{ backgroundColor: lightenedShade, color: mainColor }}
           >
             &raquo;
           </button>
