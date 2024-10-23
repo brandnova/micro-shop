@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaShoppingCart, FaInfoCircle } from 'react-icons/fa';
 
-const Header = ({ cartItemsCount, onOpenCart, onOpenBankDetails, siteTitle, mainColor, lighterShade }) => {
+const Header = ({ cartItemsCount, onOpenCart, onOpenBankDetails, siteSettings, mainColor }) => {
   // Generate a lighter shade of the main color for hover effects
   const lighterColor = (color) => {
     const hex = color.replace('#', '');
@@ -16,7 +16,7 @@ const Header = ({ cartItemsCount, onOpenCart, onOpenBankDetails, siteTitle, main
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <h1 className="text-3xl font-serif" style={{ color: mainColor }}>{siteTitle}</h1>
+        <h1 className="text-3xl font-serif" style={{ color: mainColor }}>{siteSettings.title}</h1>
         <div className="flex items-center space-x-4">
           <button
             onClick={onOpenBankDetails}

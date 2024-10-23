@@ -1,8 +1,8 @@
 # core/views.py 
 
-from rest_framework import viewsets, status
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+from rest_framework import viewsets, status # type: ignore
+from rest_framework.decorators import api_view # type: ignore
+from rest_framework.response import Response # type: ignore
 from .models import Product, Transaction, BankDetails, AdminToken, SiteSettings
 from .serializers import ProductSerializer, TransactionSerializer, BankDetailsSerializer, SiteSettingsSerializer
 from django.core.mail import send_mail

@@ -1,7 +1,7 @@
 # core/urls.py
 
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import DefaultRouter # type: ignore
 from .views import ProductViewSet, TransactionViewSet, BankDetailsViewSet, SiteSettingsViewSet, verify_admin, upload_payment_proof, track_order
 
 router = DefaultRouter()

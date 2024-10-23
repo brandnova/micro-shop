@@ -5,7 +5,7 @@ import App from './App.jsx'
 import './index.css'
 import axios from 'axios';
 
-axios.defaults.baseURL = 'https://mshop.coursearena.com.ng';
+axios.defaults.baseURL = 'http://localhost:8000';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
