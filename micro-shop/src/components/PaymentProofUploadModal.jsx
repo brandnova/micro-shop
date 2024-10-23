@@ -1,10 +1,9 @@
-// src/components/PaymentProofUploadModal.jsx
 import React, { useState } from 'react';
 import { FaTimes, FaCheckCircle } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
-const PaymentProofUploadModal = ({ isOpen, onClose }) => {
+const PaymentProofUploadModal = ({ isOpen, onClose, mainColor, lightenedShade, lighterShade }) => {
   const [uploadTrackingNumber, setUploadTrackingNumber] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [message, setMessage] = useState({ type: null, content: '' });
@@ -54,17 +53,23 @@ const PaymentProofUploadModal = ({ isOpen, onClose }) => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             className="bg-white p-8 rounded-lg max-w-md w-full"
+            style={{ backgroundColor: lighterShade }}
           >
-            <h2 className="text-2xl font-serif text-pink-600 mb-6">Upload Payment Proof</h2>
+            <h2 className="text-2xl font-serif mb-6" style={{ color: mainColor }}>Upload Payment Proof</h2>
             <input
               type="text"
               value={uploadTrackingNumber}
               onChange={(e) => setUploadTrackingNumber(e.target.value)}
               placeholder="Enter tracking number"
               className="w-full mb-4 p-2 border rounded-full"
+              style={{ borderColor: lightenedShade }}
             />
             <div className="mb-4">
-              <label htmlFor="file-upload" className="cursor-pointer bg-pink-100 text-pink-600 px-4 py-2 rounded-full hover:bg-pink-200 transition-colors duration-300">
+              <label
+                htmlFor="file-upload"
+                className="cursor-pointer px-4 py-2 rounded-full hover:opacity-80 transition-opacity duration-300"
+                style={{ backgroundColor: lightenedShade, color: mainColor }}
+              >
                 Choose File
               </label>
               <input
@@ -79,18 +84,24 @@ const PaymentProofUploadModal = ({ isOpen, onClose }) => {
             <button
               onClick={handleUploadPaymentProof}
               disabled={isLoading}
-              className="w-full bg-pink-500 text-white py-2 rounded-full hover:bg-pink-600 transition-colors duration-300 disabled:bg-pink-300"
+              className="w-full text-white py-2 rounded-full hover:opacity-90 transition-opacity duration-300 disabled:opacity-50"
+              style={{ backgroundColor: mainColor }}
             >
               {isLoading ? 'Uploading...' : 'Upload Proof'}
             </button>
             <button
               onClick={onClose}
-              className="mt-4 w-full border border-pink-500 text-pink-500 py-2 rounded-full hover:bg-pink-50 transition-colors duration-300"
+              className="mt-4 w-full border py-2 rounded-full hover:opacity-80 transition-opacity duration-300"
+              style={{ borderColor: mainColor, color: mainColor }}
             >
               Close
             </button>
             {message.content && (
-              <div className={`mt-4 p-3 rounded-lg ${message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+              <div
+                className={`mt-4 p-3 rounded-lg ${
+                  message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                }`}
+              >
                 {message.type === 'error' ? (
                   <FaTimes className="inline-block mr-2" />
                 ) : (

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FaBox, FaExchangeAlt, FaBars, FaTimes, FaPlus, FaEdit, FaTrash, FaSearch, FaChevronLeft, FaChevronRight, FaFileUpload } from 'react-icons/fa';
+import { FaBox, FaExchangeAlt, FaBars, FaTimes, FaPlus, FaEdit, FaTrash, FaSearch, FaChevronLeft, FaChevronRight, FaFileUpload, FaCog } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import BankDetailsModal from './BankDetailsModal';
+import SiteSettingsModal from './SiteSettingsModal';
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -23,6 +24,7 @@ const AdminDashboard = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [showBankDetailsModal, setShowBankDetailsModal] = useState(false);
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
+  const [showSiteSettingsModal, setShowSiteSettingsModal] = useState(false);
   const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);
 
   const itemsPerPage = 10;
@@ -262,6 +264,15 @@ const AdminDashboard = () => {
             {sidebarOpen && <span className="ml-4">View Transactions</span>}
           </motion.button>
         </nav>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowSiteSettingsModal(true)}
+          className="flex items-center w-full p-4 hover:bg-pink-500"
+        >
+          <FaCog size={20} />
+          {sidebarOpen && <span className="ml-4">Site Settings</span>}
+        </motion.button>
       </motion.div>
 
       {/* Main Content */}
@@ -509,6 +520,10 @@ const AdminDashboard = () => {
 
       {showBankDetailsModal && (
         <BankDetailsModal onClose={() => setShowBankDetailsModal(false)} />
+      )}
+
+      {showSiteSettingsModal && (
+        <SiteSettingsModal onClose={() => setShowSiteSettingsModal(false)} />
       )}
 
       <AnimatePresence>

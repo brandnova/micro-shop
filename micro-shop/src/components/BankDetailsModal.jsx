@@ -1,8 +1,7 @@
-// src/components/BankDetailsModal.jsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const BankDetailsModal = ({ isOpen, onClose, bankDetails }) => {
+const BankDetailsModal = ({ isOpen, onClose, bankDetails, mainColor, lightenedShade, lighterShade }) => {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -17,14 +16,16 @@ const BankDetailsModal = ({ isOpen, onClose, bankDetails }) => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             className="bg-white p-8 rounded-lg max-w-md w-full"
+            style={{ backgroundColor: lighterShade }}
           >
-            <h2 className="text-2xl font-serif text-pink-600 mb-6">Bank Details</h2>
+            <h2 className="text-2xl font-serif mb-6" style={{ color: mainColor }}>Bank Details</h2>
             <p>Bank Name: {bankDetails.bank_name}</p>
             <p>Account Name: {bankDetails.account_name}</p>
             <p>Account Number: {bankDetails.account_number}</p>
             <button
               onClick={onClose}
-              className="mt-4 text-pink-600 hover:text-pink-800 transition-colors duration-300"
+              className="mt-4 hover:opacity-80 transition-opacity duration-300"
+              style={{ color: mainColor }}
             >
               Close
             </button>

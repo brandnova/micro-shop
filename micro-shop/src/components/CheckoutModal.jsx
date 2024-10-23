@@ -10,7 +10,10 @@ const CheckoutModal = ({
   handleCheckout,
   isOrderConfirmed,
   bankDetails,
-  trackingNumber
+  trackingNumber,
+  mainColor,
+  lightenedShade,
+  lighterShade
 }) => {
   const onSubmit = async (formData) => {
     try {
@@ -34,15 +37,18 @@ const CheckoutModal = ({
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white p-8 rounded-lg max-w-md w-full"
+            className="p-8 bg-white rounded-lg max-w-md w-full"
+            style={{ backgroundColor: lighterShade }}
           >
             {!isOrderConfirmed ? (
               <>
-                <h2 className="text-2xl font-serif text-pink-600 mb-6">Checkout</h2>
+                <h2 className="text-2xl font-serif mb-6" style={{ color: mainColor }}>Checkout</h2>
                 <CheckoutForm
                   cartItems={cartItems}
                   totalPrice={totalPrice}
                   onSubmit={onSubmit}
+                  mainColor={mainColor}
+                  lightenedShade={lightenedShade}
                 />
               </>
             ) : (
@@ -51,11 +57,15 @@ const CheckoutModal = ({
                 onClose={onClose}
                 trackingNumber={trackingNumber}
                 bankDetails={bankDetails}
+                mainColor={mainColor}
+                lightenedShade={lightenedShade}
+                lighterShade={lighterShade}
               />
             )}
             <button
               onClick={onClose}
-              className="mt-4 text-pink-600 hover:text-pink-800 transition-colors duration-300"
+              className="mt-4 hover:opacity-80 transition-opacity duration-300"
+              style={{ color: mainColor }}
             >
               Close
             </button>
@@ -66,7 +76,7 @@ const CheckoutModal = ({
   );
 };
 
-const CheckoutForm = ({ cartItems, totalPrice, onSubmit }) => {
+const CheckoutForm = ({ cartItems, totalPrice, onSubmit, mainColor, lightenedShade }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = {
@@ -81,7 +91,7 @@ const CheckoutForm = ({ cartItems, totalPrice, onSubmit }) => {
   return (
     <form onSubmit={handleSubmit}>
       <div className="mb-4">
-        <h3 className="font-semibold mb-2">Order Summary:</h3>
+        <h3 className="font-semibold mb-2" style={{ color: mainColor }}>Order Summary:</h3>
         <p>Total Price: ${typeof totalPrice === 'function' ? totalPrice() : totalPrice.toFixed(2)}</p>
         <ul className="list-disc pl-5">
           {cartItems.map(item => (
@@ -95,6 +105,7 @@ const CheckoutForm = ({ cartItems, totalPrice, onSubmit }) => {
         placeholder="Full Name"
         required
         className="w-full mb-4 p-2 border rounded-full"
+        style={{ borderColor: lightenedShade }}
       />
       <input
         type="email"
@@ -102,6 +113,7 @@ const CheckoutForm = ({ cartItems, totalPrice, onSubmit }) => {
         placeholder="Email"
         required
         className="w-full mb-4 p-2 border rounded-full"
+        style={{ borderColor: lightenedShade }}
       />
       <input
         type="text"
@@ -109,6 +121,7 @@ const CheckoutForm = ({ cartItems, totalPrice, onSubmit }) => {
         placeholder="Location"
         required
         className="w-full mb-4 p-2 border rounded-full"
+        style={{ borderColor: lightenedShade }}
       />
       <input
         type="tel"
@@ -116,10 +129,12 @@ const CheckoutForm = ({ cartItems, totalPrice, onSubmit }) => {
         placeholder="Phone Number"
         required
         className="w-full mb-4 p-2 border rounded-full"
+        style={{ borderColor: lightenedShade }}
       />
       <button
         type="submit"
-        className="w-full bg-pink-500 text-white py-3 rounded-full hover:bg-pink-600 transition-colors duration-300"
+        className="w-full text-white py-3 rounded-full hover:opacity-90 transition-opacity duration-300"
+        style={{ backgroundColor: mainColor }}
       >
         Place Order
       </button>

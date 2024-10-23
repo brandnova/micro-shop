@@ -5,6 +5,7 @@ from .models import *
 admin.site.register(Product)
 admin.site.register(Transaction)
 admin.site.register(AdminToken)
+admin.site.register(SiteSettings)
 
 class BankDetailsAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):

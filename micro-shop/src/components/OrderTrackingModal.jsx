@@ -1,5 +1,4 @@
-// src/components/OrderTrackingModal.jsx
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   TruckIcon, 
@@ -21,7 +20,7 @@ const statusIcons = {
   cancelled: <XCircleIcon className="text-red-500" />
 };
 
-const OrderTrackingModal = ({ isOpen, onClose, trackingNumber, orderStatus }) => {
+const OrderTrackingModal = ({ isOpen, onClose, trackingNumber, orderStatus, mainColor, lightenedShade, lighterShade }) => {
   return (
     <AnimatePresence>
       {isOpen && orderStatus && (
@@ -37,31 +36,36 @@ const OrderTrackingModal = ({ isOpen, onClose, trackingNumber, orderStatus }) =>
             exit={{ scale: 0.9, opacity: 0 }}
             className="bg-white p-8 rounded-lg max-w-md w-full"
           >
-            <h2 className="text-2xl font-serif text-pink-600 mb-6">Order Status</h2>
+            <h2 className="text-2xl font-serif mb-6" style={{ color: mainColor }}>Order Status</h2>
             <div className="flex items-center mb-4">
               <div className="mr-4">
                 {statusIcons[orderStatus.status]}
               </div>
               <div>
-                <p className="font-semibold">{orderStatus.status.replace('_', ' ').charAt(0).toUpperCase() + orderStatus.status.replace('_', ' ').slice(1)}</p>
+                <p className="font-semibold" style={{ color: mainColor }}>
+                  {orderStatus.status.replace('_', ' ').charAt(0).toUpperCase() + orderStatus.status.replace('_', ' ').slice(1)}
+                </p>
                 <p className="text-sm text-gray-500">Last Updated: {new Date(orderStatus.created_at).toLocaleString()}</p>
               </div>
             </div>
-            <p className="mb-2">Tracking Number: {trackingNumber}</p>
-            <div className="mt-6 bg-gray-100 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Order Timeline</h3>
+            <p className="mb-2">Tracking Number: <span style={{ color: mainColor }}>{trackingNumber}</span></p>
+            <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: lighterShade }}>
+              <h3 className="font-semibold mb-2" style={{ color: mainColor }}>Order Timeline</h3>
               <div className="space-y-4">
                 {['pending', 'payment_uploaded', 'payment_confirmed', 'processing', 'shipped', 'delivered'].map((status, index) => (
-                  <div key={status} className={`flex items-center ${orderStatus.status === status ? 'text-pink-600' : 'text-gray-400'}`}>
+                  <div key={status} className={`flex items-center ${orderStatus.status === status ? 'opacity-100' : 'opacity-50'}`}>
                     <div className="mr-4">{statusIcons[status]}</div>
-                    <p>{status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1)}</p>
+                    <p style={{ color: orderStatus.status === status ? mainColor : 'inherit' }}>
+                      {status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1)}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
             <button
               onClick={onClose}
-              className="mt-6 w-full bg-pink-500 text-white py-2 rounded-full hover:bg-pink-600 transition-colors duration-300"
+              className="mt-6 w-full text-white py-2 rounded-full hover:opacity-90 transition-opacity duration-300"
+              style={{ backgroundColor: mainColor }}
             >
               Close
             </button>

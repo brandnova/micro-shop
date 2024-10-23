@@ -3,8 +3,8 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Product, Transaction, BankDetails, AdminToken
-from .serializers import ProductSerializer, TransactionSerializer, BankDetailsSerializer
+from .models import Product, Transaction, BankDetails, AdminToken, SiteSettings
+from .serializers import ProductSerializer, TransactionSerializer, BankDetailsSerializer, SiteSettingsSerializer
 from django.core.mail import send_mail
 from django.conf import settings
 
@@ -89,3 +89,23 @@ def track_order(request):
 
     serializer = TransactionSerializer(transaction)
     return Response(serializer.data)
+
+class SiteSettingsViewSet(viewsets.ModelViewSet):
+    queryset = SiteSettings.objects.all()
+    serializer_class = SiteSettingsSerializer
+
+    def list(self, request):
+        settings = SiteSettings.objects.first()
+        if not settings:
+            settings = SiteSettings.objects.create()
+        serializer = self.get_serializer(settings)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        settings = SiteSettings.objects.first()
+        if not settings:
+            settings = SiteSettings.objects.create()
+        serializer = self.get_serializer(settings, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)

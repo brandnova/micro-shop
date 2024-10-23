@@ -1,7 +1,7 @@
 # core/serializers.py
 
 from rest_framework import serializers
-from .models import Product, Transaction, BankDetails
+from .models import Product, Transaction, BankDetails, SiteSettings
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,4 +16,9 @@ class TransactionSerializer(serializers.ModelSerializer):
 class BankDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankDetails
+        fields = '__all__'
+
+class SiteSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SiteSettings
         fields = '__all__'

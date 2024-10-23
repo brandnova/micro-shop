@@ -2,12 +2,13 @@
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ProductViewSet, TransactionViewSet, BankDetailsViewSet, verify_admin, upload_payment_proof, track_order
+from .views import ProductViewSet, TransactionViewSet, BankDetailsViewSet, SiteSettingsViewSet, verify_admin, upload_payment_proof, track_order
 
 router = DefaultRouter()
 router.register(r'products', ProductViewSet)
 router.register(r'transactions', TransactionViewSet)
 router.register(r'bank-details', BankDetailsViewSet)
+router.register(r'site-settings', SiteSettingsViewSet, basename='site-settings')
 
 urlpatterns = [
     path('api/', include(router.urls)),
