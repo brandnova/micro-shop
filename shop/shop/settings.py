@@ -9,7 +9,8 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+import os
+import dj_database_url
 from decouple import config
 from pathlib import Path
 
@@ -95,6 +96,10 @@ DATABASES = {
     }
 }
 
+# Whitenoise Static File Handling
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -145,13 +150,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Email SMTP Settings
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'brandnova89@gmail.com'
-# EMAIL_HOST_PASSWORD = 'zxgc intt dvax quzy'
-# DEFAULT_FROM_EMAIL = 'brandnova89@gmail.com'
 
 # Maximum file upload size (5MB)
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
