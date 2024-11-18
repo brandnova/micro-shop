@@ -1,13 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ShareButtons from './ShareButtons';
 
 const ProductModal = ({ product, onClose, addToCart, loading, isOpen, mainColor }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   if (!product || !isOpen) return null;
 
   const handleAddToCart = () => {
     addToCart(product, 1);
+  };
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prevIndex) => 
+      prevIndex === 0 ? product.images.length - 1 : prevIndex - 1
+    );
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prevIndex) => 
+      prevIndex === product.images.length - 1 ? 0 : prevIndex + 1
+    );
   };
 
   return (
@@ -23,7 +38,7 @@ const ProductModal = ({ product, onClose, addToCart, loading, isOpen, mainColor 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white p-8 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white p-8 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           >
             <button
               onClick={onClose}
@@ -34,8 +49,42 @@ const ProductModal = ({ product, onClose, addToCart, loading, isOpen, mainColor 
             </button>
             
             <div className="flex flex-col md:flex-row">
-              <div className="md:w-1/2 mb-4 md:mb-0">
-                <img src={product.image} alt={product.name} className="w-full h-auto object-cover rounded-lg" />
+              <div className="md:w-1/2 mb-4 md:mb-0 relative">
+                <img 
+                  src={product.images[currentImageIndex].image} 
+                  alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                  className="w-full h-auto object-cover rounded-lg"
+                />
+                {product.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={handlePrevImage}
+                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all duration-300"
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft size={24} color={mainColor} />
+                    </button>
+                    <button
+                      onClick={handleNextImage}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all duration-300"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight size={24} color={mainColor} />
+                    </button>
+                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                      {product.images.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`h-3 w-3 rounded-full ${
+                            index === currentImageIndex ? 'bg-white' : 'bg-white bg-opacity-50'
+                          }`}
+                          aria-label={`Go to image ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
               <div className="md:w-1/2 md:pl-8">
                 <h2 className="text-2xl font-serif mb-4" style={{ color: mainColor }}>{product.name}</h2>

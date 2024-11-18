@@ -1,3 +1,4 @@
+// src/pages/HomePage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { lighten } from 'polished';

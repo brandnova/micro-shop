@@ -1,3 +1,4 @@
+// src/components/home/FeaturedCollections.jsx
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -75,7 +76,7 @@ const FeaturedCollections = ({ heroProducts, mainColor, lightenedShade, lighterS
               >
                 <div className="w-full md:w-1/2 mb-6 md:mb-0 md:pr-8">
                   <img
-                    src={visibleProducts[currentIndex].image}
+                    src={visibleProducts[currentIndex].images.find(img => img.is_primary)?.image || visibleProducts[currentIndex].images[0].image}
                     alt={visibleProducts[currentIndex].name}
                     className="w-full h-64 sm:h-96 md:h-full object-cover rounded-lg shadow-lg transition-transform duration-300 hover:scale-105"
                   />
