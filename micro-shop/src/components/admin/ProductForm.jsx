@@ -15,6 +15,7 @@ const ProductForm = ({
 }) => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagesPreviews, setImagesPreviews] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (editingProduct) {
@@ -65,6 +66,7 @@ const ProductForm = ({
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     const formDataToSend = new FormData();
     
     Object.keys(formData).forEach(key => {
@@ -106,6 +108,8 @@ const ProductForm = ({
       refreshProducts();
     } catch (error) {
       console.error('Error submitting product:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -212,22 +216,24 @@ const ProductForm = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           type="submit"
-          className="bg-gradient-to-r from-pink-500 to-purple-600 text-white py-2 px-4 rounded hover:from-pink-600 hover:to-purple-700 transition duration-300"
+          disabled={isLoading}
+          className={`bg-gradient-to-r from-pink-500 to-purple-600 text-white py-2 px-4 rounded hover:from-pink-600 hover:to-purple-700 transition duration-300 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          {editingProduct ? 'Update Product' : 'Add Product'}
+          {isLoading ? 'Loading...' : (editingProduct ? 'Update Product' : 'Add Product')}
         </motion.button>
         {editingProduct && (
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             type="button"
+            disabled={isLoading}
             onClick={() => {
               setEditingProduct(null);
               setFormData({ name: '', category: '', description: '', price: '', quantity: 0 });
               setSelectedImages([]);
               setImagesPreviews([]);
             }}
-            className="bg-gray-300 text-gray-800 py-2 px-4 rounded hover:bg-gray-400 transition duration-300"
+            className={`bg-gray-300 text-gray-800 py-2 px-4 rounded hover:bg-gray-400 transition duration-300 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Cancel Edit
           </motion.button>
