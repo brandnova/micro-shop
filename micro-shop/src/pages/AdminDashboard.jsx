@@ -28,7 +28,6 @@ const AdminDashboard = () => {
     category: '',
     description: '',
     price: '',
-    image: null,
     quantity: 0
   });
   const [editingProduct, setEditingProduct] = useState(null);
@@ -36,10 +35,10 @@ const AdminDashboard = () => {
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
   const [showSiteSettingsModal, setShowSiteSettingsModal] = useState(false);
   const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);
-  const [allTransactions, setAllTransactions] = useState([]); 
+  const [allTransactions, setAllTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [productSearchTerm, setProductSearchTerm] = useState('');
-  const [allProducts, setAllProducts] = useState([]); 
+  const [allProducts, setAllProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
 
   const itemsPerPage = 10;
@@ -57,17 +56,11 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchProducts();
     fetchTransactions();
-  }, [currentPage, searchTerm, statusFilter]);
+  }, []);
 
-  const handleApplyFilters = () => {
-    setCurrentPage(1); 
-    fetchTransactions();
-  };
-
-  // Modify the fetchProducts function to store all products
   const fetchProducts = async () => {
     try {
-      const response = await axios.get(`/api/products/?page=${currentPage}&limit=${itemsPerPage}`);
+      const response = await axios.get('/api/products/');
       setAllProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -117,18 +110,27 @@ const AdminDashboard = () => {
     fetchTransactions();
   }, []);
 
-  const handleAddProduct = async (e) => {
-    e.preventDefault();
+  const handleAddProduct = async (productData, images) => {
     try {
-      const formDataToSend = new FormData();
-      for (const key in formData) {
-        formDataToSend.append(key, formData[key]);
+      const response = await axios.post('/api/products/', productData);
+      const newProductId = response.data.id;
+
+      if (images.length > 0) {
+        const imageFormData = new FormData();
+        images.forEach((image, index) => {
+          imageFormData.append('images', image);
+          if (index === 0) {
+            imageFormData.append('is_primary', 'true');
+          }
+        });
+
+        await axios.post(`/api/products/${newProductId}/upload-images/`, imageFormData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       }
-      await axios.post('/api/products/', formDataToSend, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      fetchProducts();
-      setFormData({ name: '', category: '', description: '', price: '', image: null, quantity: 0 });
+
+      await fetchProducts(); // Re-fetch products after adding
+      setFormData({ name: '', category: '', description: '', price: '', quantity: 0 });
     } catch (error) {
       console.error('Error adding product:', error);
     }
@@ -141,26 +143,31 @@ const AdminDashboard = () => {
       category: product.category,
       description: product.description,
       price: product.price,
-      image: null,
       quantity: product.quantity
     });
   };
 
-  const handleUpdateProduct = async (e) => {
-    e.preventDefault();
+  const handleUpdateProduct = async (productData, images, primaryImageId) => {
     try {
-      const formDataToSend = new FormData();
-      for (const key in formData) {
-        if (formData[key] !== null) {
-          formDataToSend.append(key, formData[key]);
+      await axios.patch(`/api/products/${editingProduct.id}/`, productData);
+
+      if (images.length > 0 || primaryImageId) {
+        const imageFormData = new FormData();
+        images.forEach((image) => {
+          imageFormData.append('images', image);
+        });
+        if (primaryImageId) {
+          imageFormData.append('primary_image', primaryImageId);
         }
+
+        await axios.post(`/api/products/${editingProduct.id}/upload-images/`, imageFormData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       }
-      await axios.patch(`/api/products/${editingProduct.id}/`, formDataToSend, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      fetchProducts();
+
+      await fetchProducts(); // Re-fetch products after updating
       setEditingProduct(null);
-      setFormData({ name: '', category: '', description: '', price: '', image: null, quantity: 0 });
+      setFormData({ name: '', category: '', description: '', price: '', quantity: 0 });
     } catch (error) {
       console.error('Error updating product:', error);
     }
@@ -170,7 +177,7 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await axios.delete(`/api/products/${id}/`);
-        fetchProducts();
+        await fetchProducts(); // Re-fetch products after deleting
       } catch (error) {
         console.error('Error deleting product:', error);
       }
@@ -181,7 +188,7 @@ const AdminDashboard = () => {
     const { name, value, files } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: files ? files[0] : value
+      [name]: files ? Array.from(files) : value
     }));
   };
 
@@ -233,6 +240,7 @@ const AdminDashboard = () => {
                 editingProduct={editingProduct}
                 setEditingProduct={setEditingProduct}
                 setFormData={setFormData}
+                refreshProducts={fetchProducts}
               />
               <ProductsSearch 
                 searchTerm={productSearchTerm}

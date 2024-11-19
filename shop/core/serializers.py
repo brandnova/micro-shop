@@ -1,12 +1,26 @@
 # core/serializers.py
 
-from rest_framework import serializers # type: ignore
-from .models import Product, Transaction, BankDetails, SiteSettings
+from rest_framework import serializers
+from .models import Product, ProductImage, Transaction, BankDetails, SiteSettings
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ['id', 'image', 'is_primary', 'created_at']
 
 class ProductSerializer(serializers.ModelSerializer):
+    images = ProductImageSerializer(many=True, read_only=True)
+    primary_image = serializers.SerializerMethodField()
+    
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = ['id', 'name', 'category', 'description', 'price', 'quantity', 'images', 'primary_image']
+    
+    def get_primary_image(self, obj):
+        primary_image = obj.images.filter(is_primary=True).first()
+        if primary_image:
+            return ProductImageSerializer(primary_image).data
+        return None
 
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,4 +35,4 @@ class BankDetailsSerializer(serializers.ModelSerializer):
 class SiteSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = SiteSettings
-        fields = '__all__'
+        fields = ['id', 'site_title', 'contact_email', 'contact_number', 'main_color', 'store_tag']

@@ -5,7 +5,7 @@ const Footer = ({ siteSettings, mainColor, lightenedShade }) => (
   <footer className="py-8 mt-16" style={{ backgroundColor: lightenedShade }}>
     <div className="container mx-auto px-4 text-center">
       <p style={{ color: mainColor }}>&copy; {new Date().getFullYear()} {siteSettings.title}. All rights reserved.</p>
-      <p className="mt-2 text-gray-600">Elevating your style with grace and sophistication.</p>
+      <p className="mt-2 text-gray-600">{siteSettings.store_tag}</p>
       <div className="mt-4 space-y-1">
         <p>
           <a 

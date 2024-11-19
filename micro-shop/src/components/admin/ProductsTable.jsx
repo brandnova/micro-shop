@@ -43,7 +43,11 @@ const ProductsTable = ({ products, handleEditProduct, handleDeleteProduct }) => 
               className="border-b border-pink-100 hover:bg-pink-50"
             >
               <td className="p-3">
-                <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded" />
+                <img
+                  src={product.images.find(img => img.is_primary)?.image || '/placeholder-image.jpg'}
+                  alt={product.name}
+                  className="w-12 h-12 object-cover rounded"
+                />
               </td>
               <td className="p-3">{product.name}</td>
               <td className="p-3">{product.category}</td>

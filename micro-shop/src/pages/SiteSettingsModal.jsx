@@ -1,3 +1,4 @@
+// src/pages/SiteSettingsModal.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
@@ -11,7 +12,8 @@ const SiteSettingsModal = ({ onClose }) => {
     featured_collection_title: '',
     main_color: '#000000',
     contact_email: '',
-    contact_number: ''
+    contact_number: '',
+    store_tag: ''
   });
 
   useEffect(() => {
@@ -92,6 +94,18 @@ const SiteSettingsModal = ({ onClose }) => {
               value={settings.contact_number}
               onChange={handleInputChange}
               placeholder="1234567890"
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Store Tag</label>
+            <input
+              type="text"
+              name="store_tag"
+              value={settings.store_tag}
+              onChange={handleInputChange}
+              placeholder="Elevating your style with grace and sophistication."
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500"
             />
           </div>

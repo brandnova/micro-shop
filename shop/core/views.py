@@ -1,16 +1,124 @@
 # core/views.py 
 
-from rest_framework import viewsets, status # type: ignore
-from rest_framework.decorators import api_view # type: ignore
-from rest_framework.response import Response # type: ignore
-from .models import Product, Transaction, BankDetails, AdminToken, SiteSettings
-from .serializers import ProductSerializer, TransactionSerializer, BankDetailsSerializer, SiteSettingsSerializer
+from rest_framework import viewsets, status 
+from rest_framework.decorators import api_view, action 
+from rest_framework.response import Response 
+from .models import Product, ProductImage, Transaction, BankDetails, AdminToken, SiteSettings
+from .serializers import ProductSerializer, ProductImageSerializer, TransactionSerializer, BankDetailsSerializer, SiteSettingsSerializer
+from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+
+    @action(detail=True, methods=['POST'], url_path='upload-images')
+    def upload_images(self, request, pk=None):
+        product = self.get_object()
+        images = request.FILES.getlist('images')
+        primary_image_id = request.data.get('primary_image')
+        
+        if not images and not primary_image_id:
+            return Response(
+                {'error': 'No images provided and no primary image specified'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Limit total number of images per product
+        existing_count = product.images.count()
+        if existing_count + len(images) > 10:  # Maximum 10 images per product
+            return Response(
+                {'error': f'Maximum 10 images allowed per product. You can add {10 - existing_count} more images.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        uploaded_images = []
+        for image in images:
+            try:
+                product_image = ProductImage.objects.create(
+                    product=product,
+                    image=image
+                )
+                uploaded_images.append(product_image)
+            except Exception as e:
+                return Response(
+                    {'error': str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Set primary image
+        if primary_image_id:
+            try:
+                primary_image = ProductImage.objects.get(id=primary_image_id, product=product)
+                product.images.update(is_primary=False)
+                primary_image.is_primary = True
+                primary_image.save()
+            except ProductImage.DoesNotExist:
+                return Response(
+                    {'error': 'Specified primary image does not exist'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        elif uploaded_images and not product.images.filter(is_primary=True).exists():
+            uploaded_images[0].is_primary = True
+            uploaded_images[0].save()
+        
+        serializer = ProductImageSerializer(uploaded_images, many=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['POST'], url_path='set-primary-image')
+    def set_primary_image(self, request, pk=None):
+        product = self.get_object()
+        image_id = request.data.get('image_id')
+        
+        if not image_id:
+            return Response(
+                {'error': 'image_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            image = ProductImage.objects.get(id=image_id, product=product)
+            product.images.update(is_primary=False)
+            image.is_primary = True
+            image.save()
+        except ProductImage.DoesNotExist:
+            return Response(
+                {'error': 'Specified image does not exist'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return Response({'message': 'Primary image updated successfully'})
+    
+    @action(detail=True, methods=['DELETE'], url_path='delete-image')
+    def delete_image(self, request, pk=None):
+        product = self.get_object()
+        image_id = request.data.get('image_id')
+        
+        if not image_id:
+            return Response(
+                {'error': 'image_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            image = ProductImage.objects.get(id=image_id, product=product)
+            
+            # If deleting primary image, set another image as primary if available
+            if image.is_primary:
+                next_image = product.images.exclude(id=image_id).first()
+                if next_image:
+                    next_image.is_primary = True
+                    next_image.save()
+            
+            image.delete()
+        except ProductImage.DoesNotExist:
+            return Response(
+                {'error': 'Specified image does not exist'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return Response({'message': 'Image deleted successfully'})
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()

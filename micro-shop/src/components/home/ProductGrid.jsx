@@ -1,7 +1,7 @@
 // src/components/ProductGrid.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ProductGrid = ({ products, onProductClick, onAddToCart, isLoading, mainColor, lightenedShade, lighterShade }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -124,6 +124,22 @@ const ProductGrid = ({ products, onProductClick, onAddToCart, isLoading, mainCol
 };
 
 const ProductCard = ({ product, onClick, onAddToCart, isLoading, mainColor, lightenedShade }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prevIndex) => 
+      prevIndex === 0 ? product.images.length - 1 : prevIndex - 1
+    );
+  };
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prevIndex) => 
+      prevIndex === product.images.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+
   return (
     <motion.div
       className="bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer"
@@ -132,7 +148,39 @@ const ProductCard = ({ product, onClick, onAddToCart, isLoading, mainColor, ligh
       onClick={onClick}
     >
       <div className="relative">
-        <img src={product.image} alt={product.name} className="w-full h-64 object-cover" />
+        <img 
+          src={product.images[currentImageIndex].image} 
+          alt={`${product.name} - Image ${currentImageIndex + 1}`} 
+          className="w-full h-64 object-cover"
+        />
+        {product.images.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevImage}
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 rounded-full p-1 hover:bg-opacity-75 transition-all duration-300"
+              aria-label="Previous image"
+            >
+              <ChevronLeft size={20} color={mainColor} />
+            </button>
+            <button
+              onClick={handleNextImage}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 rounded-full p-1 hover:bg-opacity-75 transition-all duration-300"
+              aria-label="Next image"
+            >
+              <ChevronRight size={20} color={mainColor} />
+            </button>
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
+              {product.images.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-2 w-2 rounded-full ${
+                    index === currentImageIndex ? 'bg-white' : 'bg-white bg-opacity-50'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
       <div className="p-4">
         <h3 className="text-xl font-semibold mb-2" style={{ color: mainColor }}>{product.name}</h3>

@@ -1,3 +1,4 @@
+// src/components/home/CartModal.jsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
@@ -43,7 +44,6 @@ const CartModal = ({ isOpen, onClose, cartItems, onRemoveItem, onUpdateQuantity,
                       mainColor={mainColor}
                       lightenedShade={lightenedShade}
                       lighterShade={lighterShade}
-
                     />
                   ))
                 )}
@@ -68,10 +68,13 @@ const CartModal = ({ isOpen, onClose, cartItems, onRemoveItem, onUpdateQuantity,
 };
 
 const CartItem = ({ item, onRemove, onUpdateQuantity, mainColor, lightenedShade, lighterShade }) => {
+  // Find the primary image or use the first image if no primary image is set
+  const primaryImage = item.images.find(img => img.is_primary) || item.images[0];
+
   return (
     <div className="flex items-center mb-4">
       <img
-        src={item.image}
+        src={primaryImage.image}
         alt={item.name}
         className="w-16 h-16 object-cover rounded mr-4"
       />
