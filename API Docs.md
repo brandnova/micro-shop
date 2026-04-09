@@ -1,166 +1,173 @@
-# API Documentation for Mini Store Backend
+# API Documentation — MicroShop v2
 
 ## Introduction
 
-This document outlines the API endpoints for the Mini Store backend, including recent upgrades to the system workflow.
+MicroShop is a simple e-commerce backend built with Django REST Framework. It supports product management, order placement, payment proof uploads, and order tracking.
 
-### Workflow Evolution
+---
 
-#### Former Workflow:
-1. Users selected products and added them to the cart (frontend functionality).
-2. Users filled in their contact information during checkout.
-3. Users were informed that the vendor had seen their order and was awaiting payment.
-4. Users made a bank transfer to the displayed bank details.
-5. The site owner manually managed products and transactions/orders through an admin dashboard.
+## Workflow
 
-#### Current Workflow:
-1. Users select products and add them to the cart (frontend functionality).
-2. Users fill in their contact information during checkout.
-3. The system automatically generates a tracking number for the order and emails it to the user.
-4. Users make a bank transfer and can upload proof of payment using their tracking number.
-5. Users can track their order status using the tracking number.
-6. The site owner can manage products, view and update order statuses, and confirm payments through the admin dashboard.
+1. Users browse products and add them to the cart (frontend).
+2. Users fill in contact details at checkout. The cart items are submitted as structured line items.
+3. The system creates an order, generates a human-readable tracking code (e.g. `MS-2025-A3BX9K2Z`), and emails it to the customer.
+4. The customer makes a bank transfer, then uploads payment proof using their tracking code.
+5. The customer can track their order status at any time using their tracking code.
+6. The site owner manages products, views orders, confirms payments, and updates statuses via the Django admin.
 
-## API Endpoints
+---
 
-### 1. Products
+## Endpoints
 
-#### GET /api/products/
-Retrieve a list of all products.
+### Health
+
+#### `GET /api/health/`
+Returns API status and version info.
 
 **Response:**
 ```json
-[
-  {
-    "id": 1,
-    "name": "Product Name",
-    "category": "Category",
-    "description": "Product description",
-    "price": "10.99",
-    "image": "http://example.com/media/products/image.jpg",
-    "quantity": 100
-  },
-  ...
-]
+{
+  "status": "ok",
+  "version": "2.0",
+  "name": "MicroShop API",
+  "environment": "development"
+}
 ```
 
-#### POST /api/products/
-Create a new product (Admin only).
+---
+
+### Products
+
+#### `GET /api/products/`
+List all products. Each product includes all images and a resolved `primary_image`.
+
+#### `POST /api/products/`
+Create a product (admin only).
 
 **Request:**
 ```json
 {
-  "name": "New Product",
-  "category": "New Category",
-  "description": "Product description",
+  "name": "Product Name",
+  "category": "Category",
+  "description": "Description",
   "price": "15.99",
-  "image": <image_file>,
   "quantity": 50
 }
 ```
 
-**Response:**
+#### `GET /api/products/{id}/`
+Retrieve a single product.
+
+#### `PUT /api/products/{id}/` / `PATCH /api/products/{id}/`
+Update a product (admin only).
+
+#### `DELETE /api/products/{id}/`
+Delete a product (admin only).
+
+#### `POST /api/products/{id}/upload-images/`
+Upload images for a product. Accepts `multipart/form-data` with a list of image files under the key `images`. Optionally pass `primary_image` (an existing image ID) to set the primary.
+
+#### `POST /api/products/{id}/set-primary-image/`
+Set a product's primary image.
+
+**Request:** `{ "image_id": 3 }`
+
+#### `DELETE /api/products/{id}/delete-image/`
+Delete a specific image from a product.
+
+**Request:** `{ "image_id": 3 }`
+
+---
+
+### Orders
+
+> Previously `/api/transactions/`. Now `/api/orders/`.
+
+#### `GET /api/orders/`
+List all orders. Supports search via `?search=` (matches name, email, or tracking code).
+
+#### `POST /api/orders/`
+Place a new order. Accepts customer details and a list of cart items. Automatically generates a tracking code and sends a confirmation email.
+
+**Request:**
 ```json
 {
-  "id": 2,
-  "name": "New Product",
-  "category": "New Category",
-  "description": "Product description",
-  "price": "15.99",
-  "image": "http://example.com/media/products/new_image.jpg",
-  "quantity": 50
+  "name": "Customer Name",
+  "email": "customer@example.com",
+  "location": "Customer Address",
+  "phone": "08012345678",
+  "total_amount": "25.99",
+  "items": [
+    { "product_name": "Item A", "price": "10.00", "quantity": 2 },
+    { "product_name": "Item B", "price": "5.99", "quantity": 1 }
+  ]
 }
 ```
-
-#### GET /api/products/{id}/
-Retrieve a specific product.
 
 **Response:**
 ```json
 {
   "id": 1,
-  "name": "Product Name",
-  "category": "Category",
-  "description": "Product description",
-  "price": "10.99",
-  "image": "http://example.com/media/products/image.jpg",
-  "quantity": 100
-}
-```
-
-#### PUT /api/products/{id}/
-Update a specific product (Admin only).
-
-#### DELETE /api/products/{id}/
-Delete a specific product (Admin only).
-
-### 2. Transactions
-
-#### GET /api/transactions/
-Retrieve a list of all transactions (Admin only).
-
-**Response:**
-```json
-[
-  {
-    "id": 1,
-    "tracking_number": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "Customer Name",
-    "email": "customer@example.com",
-    "location": "Customer Address",
-    "phone": "1234567890",
-    "total_amount": "25.99",
-    "products": "Product 1, Product 2",
-    "status": "pending",
-    "created_at": "2023-04-20T12:00:00Z",
-    "payment_proof": null
-  },
-  ...
-]
-```
-
-#### POST /api/transactions/
-Create a new transaction (order).
-
-**Request:**
-```json
-{
+  "tracking_code": "MS-2025-A3BX9K2Z",
   "name": "Customer Name",
   "email": "customer@example.com",
   "location": "Customer Address",
-  "phone": "1234567890",
+  "phone": "08012345678",
   "total_amount": "25.99",
-  "products": "Product 1, Product 2"
-}
-```
-
-**Response:**
-```json
-{
-  "id": 2,
-  "tracking_number": "660e8400-e29b-41d4-a716-446655440000",
-  "name": "Customer Name",
-  "email": "customer@example.com",
-  "location": "Customer Address",
-  "phone": "1234567890",
-  "total_amount": "25.99",
-  "products": "Product 1, Product 2",
   "status": "pending",
-  "created_at": "2023-04-20T13:00:00Z",
-  "payment_proof": null
+  "created_at": "2025-01-20T12:00:00Z",
+  "payment_proof": null,
+  "items": [
+    { "id": 1, "product_name": "Item A", "price": "10.00", "quantity": 2, "subtotal": "20.00" },
+    { "id": 2, "product_name": "Item B", "price": "5.99", "quantity": 1, "subtotal": "5.99" }
+  ],
+  "status_history": [
+    { "id": 1, "status": "pending", "note": "Order placed.", "created_at": "2025-01-20T12:00:00Z" }
+  ]
 }
 ```
 
-#### GET /api/transactions/{id}/
-Retrieve a specific transaction (Admin only).
+#### `GET /api/orders/{id}/`
+Retrieve a specific order by database ID (admin use).
 
-#### PATCH /api/transactions/{id}/
-Update a specific transaction (Admin only).
+#### `PATCH /api/orders/{id}/`
+Update an order's status (admin only). Optionally pass `status_note` to annotate the change in status history.
 
-### 3. Bank Details
+**Request:** `{ "status": "shipped", "status_note": "Dispatched via DHL" }`
 
-#### GET /api/bank-details/
-Retrieve bank details for payment.
+---
+
+### Order Tracking
+
+#### `GET /api/orders/track/?tracking_code=MS-2025-A3BX9K2Z`
+Look up an order by tracking code. Returns the full order including items and status history.
+
+---
+
+### Payment Proof Upload
+
+#### `POST /api/orders/upload-proof/`
+Upload payment proof for an order.
+
+**Request:** `multipart/form-data`
+```
+tracking_code: MS-2025-A3BX9K2Z
+payment_proof: <file>   (jpg, jpeg, png, or pdf — max 10MB)
+```
+
+**Response:**
+```json
+{ "message": "Payment proof uploaded successfully." }
+```
+
+On success, the order status automatically moves to `payment_uploaded` and the change is logged in status history.
+
+---
+
+### Bank Details
+
+#### `GET /api/bank-details/`
+Retrieve bank account details for payment.
 
 **Response:**
 ```json
@@ -172,111 +179,54 @@ Retrieve bank details for payment.
 }
 ```
 
-### 4. Admin Verification
+---
 
-#### POST /api/verify-admin/
-Verify admin token.
+### Admin Verification
 
-**Request:**
-```json
-{
-  "token": "admin_token_here"
-}
+#### `POST /api/verify-admin/`
+Verify an admin token. Tokens are created via the Django admin and shown exactly once.
+
+**Request:** `{ "token": "raw_token_here" }`
+
+**Response:** `{ "valid": true }` or `{ "valid": false, "message": "Token expired or revoked" }`
+
+---
+
+### Site Settings
+
+#### `GET /api/site-settings/`
+Retrieve current site settings (title, tag, contact info, theme color).
+
+#### `PUT /api/site-settings/` / `PATCH /api/site-settings/`
+Update site settings (admin only).
+
+---
+
+## Order Status Flow
+
+```
+pending → payment_uploaded → payment_confirmed → processing → shipped → delivered
+                                                                       ↘ cancelled (any stage)
 ```
 
-**Response:**
-```json
-{
-  "valid": true
-}
-```
+Every status transition is logged automatically in `status_history`.
 
-### 5. Upload Payment Proof
-
-#### POST /api/upload-payment-proof/
-Upload payment proof for a transaction.
-
-**Request:**
-```
-Content-Type: multipart/form-data
-
-tracking_number: 550e8400-e29b-41d4-a716-446655440000
-payment_proof: <file>
-```
-
-**Response:**
-```json
-{
-  "message": "Payment proof uploaded successfully"
-}
-```
-
-### 6. Track Order
-
-#### GET /api/track-order/?tracking_number=550e8400-e29b-41d4-a716-446655440000
-Track an order using the tracking number.
-
-**Response:**
-```json
-{
-  "id": 1,
-  "tracking_number": "550e8400-e29b-41d4-a716-446655440000",
-  "name": "Customer Name",
-  "email": "customer@example.com",
-  "location": "Customer Address",
-  "phone": "1234567890",
-  "total_amount": "25.99",
-  "products": "Product 1, Product 2",
-  "status": "payment_uploaded",
-  "created_at": "2023-04-20T12:00:00Z",
-  "payment_proof": "http://example.com/media/payment_proofs/proof.pdf"
-}
-```
+---
 
 ## Error Handling
 
-The API uses standard HTTP status codes to indicate the success or failure of requests. In case of an error, the response will include a JSON object with an `error` key explaining the issue.
-
-Example error response:
+The API uses standard HTTP status codes. Errors return a JSON body with an `error` key.
 
 ```json
-{
-  "error": "Invalid tracking number"
-}
+{ "error": "No order found with that tracking code." }
 ```
 
-Common status codes:
+| Code | Meaning |
+|------|---------|
+| 200 | Success |
+| 201 | Created |
+| 400 | Bad request / validation error |
+| 401 | Invalid or expired token |
+| 404 | Resource not found |
+| 500 | Server error |
 
-- 200 OK: The request was successful.
-- 201 Created: A new resource was successfully created.
-- 400 Bad Request: The request was invalid or cannot be served.
-- 401 Unauthorized: Authentication failed or user doesn't have permissions for the requested operation.
-- 404 Not Found: The requested resource could not be found.
-- 500 Internal Server Error: The server encountered an unexpected condition that prevented it from fulfilling the request.
-
-To handle and display errors in a user-friendly way:
-
-1. Check the status code of the response.
-2. If it's not a success code (200-299), extract the error message from the response body.
-3. Display the error message to the user in a clear and concise manner, such as in a toast notification or an alert box.
-
-Example JavaScript code for handling errors:
-
-```javascript
-fetch('/api/endpoint')
-  .then(response => {
-    if (!response.ok) {
-      return response.json().then(err => { throw err; });
-    }
-    return response.json();
-  })
-  .then(data => {
-    // Handle successful response
-  })
-  .catch(error => {
-    // Display error to user
-    showErrorNotification(error.error || 'An unexpected error occurred. Please try again.');
-  });
-```
-
-This API documentation should provide developers with the necessary information to build a new frontend or update an existing one to work with this backend. It includes details on all available endpoints, request/response formats, and error handling guidelines.

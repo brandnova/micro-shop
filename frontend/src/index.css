@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-accent: #6366f1;
+    --color-accent-light: #e0e7ff;
+    --color-accent-muted: #818cf8;
+    --color-accent-rgb: 99 102 241;
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-stone-50 text-zinc-900;
+    font-family: 'Outfit', system-ui, sans-serif;
+  }
+
+  h1, h2, h3 {
+    font-family: 'DM Serif Display', Georgia, serif;
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+}
+
+@layer utilities {
+  .accent-bg        { background-color: var(--color-accent); }
+  .accent-text      { color: var(--color-accent); }
+  .accent-border    { border-color: var(--color-accent); }
+  .accent-light-bg  { background-color: var(--color-accent-light); }
+  .accent-shadow    { box-shadow: 0 4px 24px rgba(var(--color-accent-rgb), 0.25); }
+  .accent-glow      { box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.15); }
+
+  .focus-accent:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px white, 0 0 0 4px var(--color-accent);
+  }
+
+  .font-serif { font-family: 'DM Serif Display', Georgia, serif; }
+  .font-sans  { font-family: 'Outfit', system-ui, sans-serif; }
+
+  .accent-wash {
+    background: linear-gradient(135deg,
+      rgba(var(--color-accent-rgb), 0.08) 0%,
+      rgba(var(--color-accent-rgb), 0.03) 50%,
+      transparent 100%
+    );
+  }
+
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: inherit;
+  }
+}
