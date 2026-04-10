@@ -79,3 +79,4 @@ out/
 # =====================
 media/
 gitignore/
+staticfiles/

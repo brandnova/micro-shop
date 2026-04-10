@@ -1,6 +1,6 @@
 # 🛒 MicroShop (V2)
 
-A lightweight, API-driven micro e-commerce system built with **Django (DRF)** and **React**. Designed for small businesses that want a real, deployable store without the complexity of payment gateway integrations.
+A lightweight, API-driven micro e-commerce system built with **Django (DRF)** and **React**. Designed for small businesses that want a real, deployable store without complex payment integrations.
 
 MicroShop uses a **manual bank transfer workflow** — customers place orders, transfer payment, upload proof, and track their order through fulfillment. The React frontend is bundled into Django for single-server deployment.
 
@@ -8,12 +8,13 @@ MicroShop uses a **manual bank transfer workflow** — customers place orders, t
 
 ## Tech Stack
 
-| Layer    | Technology                                    |
-|----------|-----------------------------------------------|
-| Backend  | Django 5.x, Django REST Framework             |
-| Frontend | React 18, Vite, Tailwind CSS, Framer Motion   |
-| Database | SQLite (development) · PostgreSQL (production) |
-| Email    | SMTP · falls back to console if unconfigured  |
+| Layer    | Technology                                                        |
+|----------|-------------------------------------------------------------------|
+| Backend  | Django 5.x, Django REST Framework                                 |
+| Frontend | React 18, Vite, Tailwind CSS, Framer Motion                       |
+| Database | SQLite (local dev) · PostgreSQL via `DATABASE_URL` (production)   |
+| Storage  | Cloudinary storage · local disk fallback       |
+| Email    | SMTP · console fallback if unconfigured                           |
 
 ---
 
@@ -32,7 +33,7 @@ MicroShop uses a **manual bank transfer workflow** — customers place orders, t
 
 ---
 
-## Development Setup
+## Local Development
 
 ### 1. Clone
 
@@ -56,13 +57,16 @@ Create `backend/.env`:
 
 ```env
 # Django core
-SECRET_KEY=your-secret-key-here
+SECRET_KEY=django-insecure-key
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
-CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
+CSRF_TRUSTED_ORIGINS=https://yourdomain.com
+
+# PostgreSQL — leave blank to use SQLite locally
+# DATABASE_URL=postgresql://HAXGOFx:IOVceEq@sectyxyauifa.db.dbaas.dev:31163/OONEoa
 
 # CORS — only needed during development (removed in production)
-CORS_ALLOWED_ORIGINS=http://localhost:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 
 # Email — leave EMAIL_HOST blank to use console output during development
 EMAIL_HOST=
@@ -70,7 +74,7 @@ EMAIL_PORT=587
 EMAIL_HOST_USER=
 EMAIL_HOST_PASSWORD=
 EMAIL_USE_TLS=True
-DEFAULT_FROM_EMAIL=noreply@yourdomain.com
+DEFAULT_FROM_EMAIL=noreply@microshop.com
 
 # Shown in customer emails as the link back to the store
 FRONTEND_URL=http://localhost:5173
@@ -80,11 +84,14 @@ API_NAME=MicroShop API
 API_VERSION=2.0
 API_ENV=development
 
-# Cloudinary — leave blank to fall back to local media storage
+# Cloudinary — leave ALL THREE blank to fall back to local media storage
+# To enable Cloudinary, fill in all three values below
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 ```
+
+> All external services are **opt-in**. Leave `DATABASE_URL` blank → SQLite. Leave Cloudinary keys blank → local disk storage. Leave `EMAIL_HOST` blank → emails print to the terminal.
 
 ### 4. Run the backend
 
@@ -96,16 +103,16 @@ python manage.py runserver
 
 ### 5. Run the frontend
 
-```bash
-cd frontend
-npm install
-npm run dev        # Vite dev server at http://localhost:5173
-```
-
 Create `frontend/.env.development`:
 
 ```env
 VITE_API_URL=http://127.0.0.1:8000
+```
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173
 ```
 
 ---
@@ -114,9 +121,8 @@ VITE_API_URL=http://127.0.0.1:8000
 
 ### Django Admin — full database control
 
-URL: `http://localhost:8000/django-admin`  
-Login: superuser credentials from `createsuperuser`
-
+URL: `/django-admin`
+Login with your `createsuperuser` credentials.
 Use for: creating admin tokens, direct data access, emergency edits.
 
 ### React Admin Dashboard — daily store operations
@@ -143,11 +149,11 @@ To revoke access: uncheck **Is active** or delete the token.
 ### Customer
 
 1. Browse products and add to cart
-2. Checkout — fill in name, email, phone, delivery address
+2. Checkout — enter name, email, phone, delivery address
 3. Receive tracking code by email (`MS-2026-AB12CD34`)
 4. Transfer the exact order total to a bank account listed under **Payment Info** in the nav
 5. Click **Upload Proof** in the nav, enter tracking code, attach receipt
-6. Click **Track Order** in the nav at any time to check status
+6. Use **Track Order** in the nav to check status at any time
 7. Receive email updates at every status change
 
 ### Store Owner
@@ -155,11 +161,11 @@ To revoke access: uncheck **Is active** or delete the token.
 1. Log into `/store-admin`
 2. **Overview** — total orders, revenue, pending actions at a glance
 3. **Products** — add, edit, delete products and manage images
-4. **Orders** — search orders, view payment proofs, update order status
-5. **Bank Details** — add payment accounts shown to customers
+4. **Orders** — search orders, view payment proofs, update status
+5. **Bank Details** — manage payment accounts shown to customers
 6. **Site Settings** — store name, tagline, contact info, accent color
 
-Every status change (Payment Confirmed, Shipped, Delivered, etc.) automatically emails the customer.
+Every status update emails the customer automatically.
 
 ---
 
@@ -193,123 +199,105 @@ GET  /api/site-settings/
 
 ## Production Deployment
 
-### 1. Configure environment
+### Render (recommended)
 
-Update `backend/.env`:
+MicroShop includes a `build.sh` that handles the full build and integration automatically.
+
+#### Prerequisites
+
+- Render account
+- PostgreSQL database (Supabase, Neon, Railway, or any provider that gives a connection string)
+- Cloudinary account with storage config variables
+
+#### 1. Render Web Service settings
+
+| Field | Value |
+|---|---|
+| Runtime | Python 3 |
+| Build Command | `chmod +x build.sh && ./build.sh` |
+| Start Command | `cd backend && gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT` |
+
+#### 2. Environment variables (set in Render dashboard)
 
 ```env
-DEBUG=False
-SECRET_KEY=a-long-random-production-key
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
-FRONTEND_URL=https://yourdomain.com
-API_ENV=production
-
-# Real SMTP credentials
-EMAIL_HOST=smtp.yourprovider.com
-EMAIL_HOST_USER=you@yourdomain.com
-EMAIL_HOST_PASSWORD=your-smtp-password
-DEFAULT_FROM_EMAIL=noreply@yourdomain.com
-
-# Remove or leave blank — CORS not needed when frontend is served by Django
-CORS_ALLOWED_ORIGINS=
+# Same as your local .env variables (set DEBUG to False)
 ```
 
-### 2. Build the React frontend
+#### 3. After first deploy — create superuser
+
+Render dashboard → your service → **Shell** tab:
 
 ```bash
-cd frontend
-npm run build
+cd backend && python manage.py createsuperuser
 ```
 
-### 3. Move build output into Django
+#### 4. Post-deploy setup checklist
 
-```
-frontend/dist/assets/    →  backend/static/frontend/assets/
-frontend/dist/index.html →  backend/templates/frontend/index.html
-```
+1. `/django-admin` → **Admin Tokens → Add** — create your store login token
+2. `/django-admin` → **Bank Details → Add** — add your payment account(s)
+3. `/django-admin` → **Site Settings** — configure store name, tagline, theme color
+4. `/store-admin` — log in with your token and verify everything loads
 
-### 4. Update index.html to use Django static tags
+> **Free tier:** Render's free tier sleeps after 15 minutes of inactivity. First request after sleep takes ~30s. Upgrade to Starter ($7/month) for always-on.
 
-Open `backend/templates/frontend/index.html` and make these two edits:
+---
 
-**Add at the very top:**
-```html
-{% load static %}
-```
+### Manual deployment (Linux/VPS)
 
-**Replace all asset `src` and `href` paths**, for example:
-```html
-<!-- Before -->
-<script src="/assets/index-abc123.js"></script>
-<link rel="stylesheet" href="/assets/index-abc123.css">
-
-<!-- After -->
-<script src="{% static 'frontend/assets/index-abc123.js' %}"></script>
-<link rel="stylesheet" href="{% static 'frontend/assets/index-abc123.css' %}">
-```
-
-### 5. Collect static files
+#### 1. Build and integrate
 
 ```bash
-cd backend
-python manage.py collectstatic
+chmod +x build.sh && ./build.sh
 ```
 
-### 6. Run the server
+#### 2. Nginx configuration
 
-```bash
-gunicorn backend.wsgi:application --bind 0.0.0.0:8000
-```
-
-Or with Daphne (if you add Channels later):
-
-```bash
-daphne backend.asgi:application
-```
-
-### Media files in production
-
-Django does **not** serve `/media/` files efficiently in production. The recommended setup is to point your web server directly at `MEDIA_ROOT`:
-
-**Nginx example:**
 ```nginx
-location /media/ {
-    alias /path/to/backend/media/;
-}
+server {
+    listen 80;
+    server_name yourdomain.com;
 
-location /static/ {
-    alias /path/to/backend/staticfiles/;
-}
+    location /static/ {
+        alias /path/to/backend/staticfiles/;
+    }
 
-location / {
-    proxy_pass http://127.0.0.1:8000;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
+    location /media/ {
+        # Only needed if Cloudinary storage is NOT configured.
+        # With Cloudinary active, media is served directly from the bucket.
+        alias /path/to/backend/media/;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
 }
 ```
-
-If you don't have Nginx (e.g. on a simple VPS or PaaS), the Django fallback in `urls.py` will serve media files directly — fine for low traffic, not recommended for scale.
 
 ---
 
 ## Deployment Checklist
 
-- [ ] `DEBUG=False` in `.env`
-- [ ] `SECRET_KEY` is long, random, and not the default
+- [ ] `DEBUG=False`
+- [ ] `SECRET_KEY` is long, random, not the default
 - [ ] `ALLOWED_HOSTS` includes your domain
-- [ ] `CSRF_TRUSTED_ORIGINS` includes your domain with `https://`
-- [ ] `FRONTEND_URL` points to your live domain
-- [ ] SMTP credentials set and tested
-- [ ] React built and files moved into Django (`static/` and `templates/`)
-- [ ] `index.html` updated with `{% load static %}` and `{% static %}` tags
-- [ ] `collectstatic` run successfully
-- [ ] Database migrated (`python manage.py migrate`)
-- [ ] Superuser created (`python manage.py createsuperuser`)
+- [ ] `CSRF_TRUSTED_ORIGINS` includes `https://` + your domain
+- [ ] `FRONTEND_URL` points to your live URL
+- [ ] `DATABASE_URL` set to your PostgreSQL connection string
+- [ ] Cloudinary credentials set in virtual environment file
+- [ ] SMTP credentials configured and tested
+- [ ] Frontend built and integrated (`build.sh` or manual steps)
+- [ ] `collectstatic` completed successfully
+- [ ] Database migrated
+- [ ] Superuser created
 - [ ] Admin token created via Django Admin
-- [ ] Media files served by Nginx or the Django fallback is in place
+- [ ] Bank details added
+- [ ] Site settings configured
 - [ ] `/api/health/` returns `"status": "ok"` on the live domain
-- [ ] Test a full order flow end to end on the live server
+- [ ] Upload a test product image and confirm it appears (verifies S3 storage)
+- [ ] Full order flow tested end to end on the live server
 
 ---
 
@@ -317,24 +305,24 @@ If you don't have Nginx (e.g. on a simple VPS or PaaS), the Django fallback in `
 
 ```
 micro-shop/
+├── build.sh                    # Automated build and integration script
 ├── backend/
-│   ├── core/           # Models, views, serializers, email logic, URLs
-│   ├── backend/        # Django settings, root URLs, WSGI
-│   ├── static/         # Frontend build assets live here after deployment
-│   ├── staticfiles/    # Output of collectstatic — served in production
-│   └── templates/
-│       └── frontend/
-│           └── index.html   # React entry point (after build)
+│   ├── core/                   # Models, views, serializers, emails, URLs
+│   ├── backend/                # Django settings, root URLs, WSGI
+│   ├── static/frontend/        # React build assets (populated by build.sh)
+│   ├── staticfiles/            # Output of collectstatic
+│   └── templates/frontend/
+│       └── index.html          # React entry point (populated by build.sh)
 └── frontend/
     └── src/
-        ├── api/        # Axios client + per-domain request functions
-        ├── context/    # ThemeContext — accent color via CSS variables
-        ├── hooks/      # useCart, useSiteSettings, useToast, useScrollToTop
+        ├── api/                # Axios client + per-domain request functions
+        ├── context/            # ThemeContext — accent color via CSS variables
+        ├── hooks/              # useCart, useSiteSettings, useToast, useScrollToTop
         ├── components/
-        │   ├── ui/     # Button, Modal, Badge, Toast, Spinner
-        │   ├── home/   # Storefront components and modals
-        │   └── admin/  # Dashboard panels, tables, stats
-        └── pages/      # HomePage, AdminDashboard, AdminLogin
+        │   ├── ui/             # Button, Modal, Badge, Toast, Spinner
+        │   ├── home/           # Storefront components and modals
+        │   └── admin/          # Dashboard panels, tables, stats
+        └── pages/              # HomePage, AdminDashboard, AdminLogin
 ```
 
 ---
