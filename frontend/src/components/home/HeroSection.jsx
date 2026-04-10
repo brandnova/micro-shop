@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
-import { ChevronRight, Package, Truck, CreditCard, CheckCircle, ArrowRight } from 'lucide-react'
+import { ChevronRight, Package, Truck, CreditCard, CheckCircle, ArrowRight, ChevronDown } from 'lucide-react'
 import Button from '../ui/Button'
 
 function shuffle(arr) {
@@ -222,6 +222,35 @@ const TRUST = [
   { icon: CheckCircle,label: 'Order tracking' },
 ]
 
+function SiteName({ siteTitle }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.45, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="mt-4 text-center cursor-pointer"
+      onClick={() => {
+        const productsSection = document.getElementById('products')
+        if (productsSection) {
+          productsSection.scrollIntoView({ behavior: 'smooth' })
+        }
+      }}
+    >
+      <p className="text-[15px] font-serif italic text-zinc-400 tracking-wide mb-2">
+        {siteTitle}
+      </p>
+      
+      <motion.div
+        animate={{ y: [0, 6, 0] }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        className="flex justify-center text-zinc-400"
+      >
+        <ChevronDown size={14} />
+      </motion.div>
+    </motion.div>
+  )
+}
+
 // ─── Main HeroSection ─────────────────────────────────────────────────────────
 
 export default function HeroSection({ siteTitle, storeTag, onShopNow, onTrackOrder, featuredProducts }) {
@@ -234,7 +263,7 @@ export default function HeroSection({ siteTitle, storeTag, onShopNow, onTrackOrd
       <div className="absolute left-0 top-0 bottom-0 w-[3px] accent-bg opacity-80" />
 
       {/* ── MOBILE layout ────────────────────────────────────────────────────── */}
-      <div className="md:hidden relative w-full px-4 py-20 pt-24 flex flex-col gap-6">
+      <div className="md:hidden relative w-full px-4 py-10 flex flex-col gap-6">
         {/* Eyebrow */}
         <motion.div
           initial={{ opacity: 0, x: -12 }}
@@ -303,6 +332,9 @@ export default function HeroSection({ siteTitle, storeTag, onShopNow, onTrackOrd
             </span>
           ))}
         </motion.div>
+
+        {/* Trust */}
+        <SiteName siteTitle={siteTitle} />
       </div>
 
       {/* ── DESKTOP layout ───────────────────────────────────────────────────── */}
