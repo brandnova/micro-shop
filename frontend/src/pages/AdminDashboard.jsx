@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Menu, RefreshCw, ExternalLink } from 'lucide-react'
 
-import { getProducts, createProduct, updateProduct, deleteProduct, uploadProductImages, setPrimaryImage, deleteProductImage } from '../api/products'
+import { getAllProducts, createProduct, updateProduct, deleteProduct, uploadProductImages, setPrimaryImage, deleteProductImage } from '../api/products'
 import { getOrders, updateOrderStatus }                              from '../api/orders'
 import { getBankDetails, updateSiteSettings, getSiteSettings }      from '../api/settings'
 import client                                                        from '../api/client'
@@ -44,13 +44,13 @@ export default function AdminDashboard() {
     setLoading(true)
     try {
       const [p, o, b, s] = await Promise.all([
-        getProducts(),
+        getAllProducts(),
         getOrders(),
         getBankDetails(),
         getSiteSettings(),
       ])
       setProducts(p.data.results ?? p.data)
-      setOrders(o.data.results ?? o.data)
+      setOrders(Array.isArray(o.data) ? o.data : (o.data?.results ?? []))
       const rawBank = b.data?.results ?? b.data
       setBankDetails(Array.isArray(rawBank) ? rawBank : rawBank ? [rawBank] : [])
       setSettings(s.data)
@@ -93,11 +93,21 @@ export default function AdminDashboard() {
     } catch (e) { toast.error(e.message) }
   }
 
-  const handleDeleteProduct = async (id) => {
-    if (!window.confirm('Delete this product?')) return
+  // Soft toggle — active ↔ inactive
+  const handleToggleProduct = async (id, isCurrentlyActive) => {
+    try {
+      await updateProduct(id, { is_active: !isCurrentlyActive })
+      toast.success(isCurrentlyActive ? 'Product deactivated.' : 'Product reactivated.')
+      load()
+    } catch (e) { toast.error(e.message) }
+  }
+
+  // Hard delete — permanent, only called from inactive state
+  const handlePermanentDelete = async (id) => {
+    if (!window.confirm('Permanently delete this product? This cannot be undone.')) return
     try {
       await deleteProduct(id)
-      toast.success('Product deleted.')
+      toast.success('Product permanently deleted.')
       load()
     } catch (e) { toast.error(e.message) }
   }
@@ -162,7 +172,8 @@ export default function AdminDashboard() {
         products={products}
         onAdd={handleAddProduct}
         onUpdate={handleUpdateProduct}
-        onDelete={handleDeleteProduct}
+        onDelete={handleToggleProduct}         // was handleDeleteProduct
+        onPermanentDelete={handlePermanentDelete}
         onUploadImages={uploadProductImages}
         onDeleteImage={async (pid, iid) => { await deleteProductImage(pid, iid); load() }}
         onSetPrimary={async (pid, iid) => { await setPrimaryImage(pid, iid); load() }}
@@ -173,6 +184,7 @@ export default function AdminDashboard() {
         orders={orders}
         onStatusUpdate={handleStatusUpdate}
         onViewProof={url => window.open(url, '_blank')}
+        loading={loading}
       />
     ),
     bank: (

@@ -21,6 +21,8 @@ export default function ProductCard({ product, onAddToCart, onClick, loading }) 
           <img
             src={img}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-500"
           />
         ) : (

@@ -40,6 +40,8 @@ function MosaicTile({ product, variant, delay }) {
           <img
             src={img}
             alt={product.name}
+            loading="lazy" 
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700"
           />
         ) : (
@@ -130,7 +132,7 @@ function MobileStack({ products }) {
           className="absolute inset-0"
         >
           {img ? (
-            <img src={img} alt={p.name} className="w-full h-full object-cover" />
+            <img src={img} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
               <Package size={36} className="text-zinc-600" />

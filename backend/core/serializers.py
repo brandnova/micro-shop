@@ -14,7 +14,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'category', 'description', 'price', 'quantity', 'images', 'primary_image']
+        fields = ['id', 'code', 'name', 'category', 'description', 'price', 'quantity', 'is_active', 'images', 'primary_image']
 
     def get_primary_image(self, obj):
         primary = obj.images.filter(is_primary=True).first()
@@ -45,7 +45,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         model = Transaction
         fields = [
             'id', 'tracking_code', 'name', 'email', 'location', 'phone',
-            'total_amount', 'status', 'created_at', 'payment_proof',
+            'total_amount', 'status', 'note', 'created_at', 'payment_proof',
             'items', 'status_history',
         ]
         read_only_fields = ['tracking_code']
@@ -61,7 +61,7 @@ class TransactionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = [
-            'id', 'tracking_code', 'name', 'email', 'location', 'phone',
+            'id', 'tracking_code', 'name', 'email', 'location', 'phone', 'note',
             'total_amount', 'items',
         ]
         read_only_fields = ['tracking_code']
@@ -89,4 +89,4 @@ class BankDetailsSerializer(serializers.ModelSerializer):
 class SiteSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = SiteSettings
-        fields = ['id', 'site_title', 'contact_email', 'contact_number', 'main_color', 'store_tag']
+        fields = ['id', 'site_title', 'contact_email', 'contact_number', 'main_color', 'store_tag', 'delivery_methods', 'delivery_time', 'delivery_note',]

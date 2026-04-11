@@ -1,15 +1,39 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+
+const CART_KEY = 'microshop_cart'
+
+function loadCart() {
+  try {
+    const stored = localStorage.getItem(CART_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+function saveCart(items) {
+  try {
+    localStorage.setItem(CART_KEY, JSON.stringify(items))
+  } catch {
+    // Storage quota exceeded or unavailable — fail silently
+  }
+}
 
 export function useCart() {
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState(() => loadCart())
   const [isOpen, setIsOpen] = useState(false)
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
 
+  // Persist to localStorage whenever items change
+  useEffect(() => {
+    saveCart(items)
+  }, [items])
+
   const addToCart = useCallback((product, quantity = 1) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.id === product.id)
+    setItems(prev => {
+      const existing = prev.find(i => i.id === product.id)
       if (existing) {
-        return prev.map((i) =>
+        return prev.map(i =>
           i.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
         )
       }
@@ -18,28 +42,27 @@ export function useCart() {
   }, [])
 
   const removeFromCart = useCallback((id) => {
-    setItems((prev) => prev.filter((i) => i.id !== id))
+    setItems(prev => prev.filter(i => i.id !== id))
   }, [])
 
   const updateQuantity = useCallback((id, quantity) => {
     if (quantity <= 0) {
-      setItems((prev) => prev.filter((i) => i.id !== id))
+      setItems(prev => prev.filter(i => i.id !== id))
     } else {
-      setItems((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, quantity } : i))
-      )
+      setItems(prev => prev.map(i => i.id === id ? { ...i, quantity } : i))
     }
   }, [])
 
   const clearCart = useCallback(() => setItems([]), [])
 
-  const totalPrice = items.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0)
+  const totalPrice = items.reduce(
+    (sum, i) => sum + parseFloat(i.price) * i.quantity, 0
+  )
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0)
 
-  // Build the items payload for the API
   const toOrderItems = () =>
-    items.map((i) => ({
+    items.map(i => ({
       product_name: i.name,
       price: parseFloat(i.price).toFixed(2),
       quantity: i.quantity,

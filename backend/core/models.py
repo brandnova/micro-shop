@@ -8,9 +8,12 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+
+from .utils import convert_to_webp, webp_filename
 
 
-# ─── Validators ──────────────────────────────────────────────────────────────
+# ─── Validators & Generators ──────────────────────────────────────────────────────────────
 
 def validate_image_size(file):
     """Max 5MB per product image."""
@@ -28,6 +31,9 @@ def validate_payment_proof_size(file):
             f'File size cannot exceed 10MB. Current size: {file.size / (1024 * 1024):.2f}MB'
         )
 
+def generate_product_code():
+    chars = string.ascii_uppercase + string.digits
+    return ''.join(random.choices(chars, k=8))
 
 # ─── Tracking Code ───────────────────────────────────────────────────────────
 
@@ -50,13 +56,24 @@ def generate_token():
 
 class Product(models.Model):
     name = models.CharField(max_length=200)
+    code = models.CharField(max_length=8, unique=True, editable=False, db_index=True)
     category = models.CharField(max_length=100)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            for _ in range(10):
+                candidate = generate_product_code()
+                if not Product.objects.filter(code=candidate).exists():
+                    self.code = candidate
+                    break
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.code})"
 
 
 class ProductImage(models.Model):
@@ -64,7 +81,7 @@ class ProductImage(models.Model):
     image = models.ImageField(
         upload_to='products/images/',
         validators=[
-            FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png']),
+            FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'webp']),
             validate_image_size,
         ]
     )
@@ -75,6 +92,15 @@ class ProductImage(models.Model):
         ordering = ['-is_primary', '-created_at']
 
     def save(self, *args, **kwargs):
+        # Convert to WebP before saving to storage
+        if self.image and hasattr(self.image, 'file'):
+            try:
+                webp_io = convert_to_webp(self.image)
+                new_name = webp_filename(self.image.name)
+                self.image.save(new_name, ContentFile(webp_io.read()), save=False)
+            except Exception:
+                pass  # If conversion fails, save original — never block the upload
+
         if self.is_primary:
             ProductImage.objects.filter(product=self.product, is_primary=True).update(is_primary=False)
         elif not ProductImage.objects.filter(product=self.product).exists():
@@ -102,6 +128,7 @@ class Transaction(models.Model):
     phone = models.CharField(max_length=20)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=100, choices=STATUS_CHOICES, default='pending')
+    note = models.CharField(max_length=500, blank=True, default='', help_text='Optional note from the customer at checkout')
     created_at = models.DateTimeField(auto_now_add=True)
     payment_proof = models.FileField(
         upload_to='payment_proofs/',
@@ -114,12 +141,24 @@ class Transaction(models.Model):
     )
 
     def save(self, *args, **kwargs):
+        # Tracking code generation (existing logic)
         if not self.tracking_code:
             for _ in range(5):
                 code = generate_tracking_code()
                 if not Transaction.objects.filter(tracking_code=code).exists():
                     self.tracking_code = code
                     break
+
+        # Convert payment proof to WebP if it's a new image upload
+        if self.payment_proof and hasattr(self.payment_proof, 'file'):
+            try:
+                # Payment proofs don't need to be large — 800px max
+                webp_io = convert_to_webp(self.payment_proof, max_size=(800, 800), quality=80)
+                new_name = webp_filename(self.payment_proof.name)
+                self.payment_proof.save(new_name, ContentFile(webp_io.read()), save=False)
+            except Exception:
+                pass
+
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -210,6 +249,9 @@ class SiteSettings(models.Model):
     store_tag = models.CharField(max_length=255, default="Quality products, delivered.")
     contact_email = models.EmailField(max_length=255, default="support@example.com")
     contact_number = models.CharField(max_length=255, default="")
+    delivery_methods = models.CharField(max_length=255, blank=True, default='', help_text='Comma-separated list, e.g. "Pickup, Home Delivery"')
+    delivery_time = models.CharField(max_length=100, blank=True, default='', help_text='e.g. "2–5 business days"')
+    delivery_note = models.CharField(max_length=300, blank=True, default='', help_text='Optional short note shown to customers during checkout')
     main_color = models.CharField(max_length=7, default="#432B02")
 
     def __str__(self):

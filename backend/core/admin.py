@@ -108,7 +108,7 @@ class AdminTokenAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'price', 'quantity')
+    list_display = ('name', 'category', 'is_active', 'price', 'quantity')
     search_fields = ('name', 'category')
     list_filter = ('category',)
 

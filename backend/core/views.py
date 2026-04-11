@@ -3,11 +3,13 @@ import os
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import models
 from django.db.models import Q
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from .models import (
     Product, ProductImage, Transaction, TransactionStatusHistory,
@@ -60,7 +62,30 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
 
     def get_queryset(self):
-        return Product.objects.prefetch_related('images').all().order_by('-id')
+        qs = Product.objects.prefetch_related('images').order_by('-id')
+
+        if self.action not in ('list',):
+            return qs
+
+        status_filter = self.request.query_params.get('status', 'active')
+        if status_filter == 'inactive':
+            return qs.filter(is_active=False)
+        elif status_filter == 'all':
+            return qs
+        else:
+            return qs.filter(is_active=True)
+
+    def get_pagination_class(self):
+        # Don't paginate when fetching all products (used by admin dashboard)
+        if self.request.query_params.get('status') == 'all':
+            return None
+        return super().get_pagination_class()
+
+    def paginate_queryset(self, queryset):
+        # Disable pagination for status=all so admin receives the complete list
+        if self.request.query_params.get('status') == 'all':
+            return None
+        return super().paginate_queryset(queryset)
 
     @action(detail=True, methods=['POST'], url_path='upload-images')
     def upload_images(self, request, pk=None):
@@ -155,7 +180,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         return TransactionSerializer
 
     def get_queryset(self):
-        queryset = Transaction.objects.prefetch_related('items', 'status_history').all()
+        queryset = Transaction.objects.prefetch_related('items', 'status_history').all().order_by('-created_at')
         search = self.request.query_params.get('search')
         if search:
             queryset = queryset.filter(
@@ -192,6 +217,16 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 note=request.data.get('status_note', ''),
             )
             send_status_update_email(instance)
+
+            # Decrement stock when payment is confirmed — one-time, on transition only
+            if instance.status == 'payment_confirmed' and old_status != 'payment_confirmed':
+                for item in instance.items.select_related().all():
+                    # Match by name — products may have been renamed, best effort
+                    Product.objects.filter(
+                        name=item.product_name,
+                        code=item.product.code,
+                        quantity__gt=0
+                    ).update(quantity=models.F('quantity') - item.quantity)
 
         return response
 

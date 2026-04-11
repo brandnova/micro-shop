@@ -5,7 +5,7 @@ import {
   Upload, ArrowUp, Activity
 } from 'lucide-react'
 
-import { getProducts }                                 from '../api/products'
+import { getAllActiveProducts }                        from '../api/products'
 import { getBankDetails, healthCheck }                 from '../api/settings'
 import { trackOrder, uploadPaymentProof, createOrder } from '../api/orders'
 import { useSiteSettings }                             from '../hooks/useSiteSettings'
@@ -148,7 +148,7 @@ export default function HomePage() {
   const [confirmedCode, setConfirmedCode]     = useState('')
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [trackLoading, setTrackLoading]       = useState(false)
-  const [checkoutData, setCheckoutData]       = useState({ name: '', email: '', phone: '', location: '' })
+  const [checkoutData, setCheckoutData]       = useState({ name: '', email: '', phone: '', location: '', note: '' })
 
   const categories = ['All', ...new Set(products.map(p => p.category).filter(Boolean))]
 
@@ -156,10 +156,8 @@ export default function HomePage() {
 
   useEffect(() => {
     Promise.all([
-      getProducts().then(r => {
-        // Handle both paginated { results: [] } and plain array responses
-        const data = r.data?.results ?? r.data
-        setProducts(Array.isArray(data) ? data : [])
+      getAllActiveProducts().then(data => {
+        setProducts(data)
       }),
       getBankDetails().then(r => {
         // Normalise to array regardless of pagination or plain list
@@ -176,6 +174,18 @@ export default function HomePage() {
       .catch(() => toast.error('Failed to load page data. Please refresh.'))
       .finally(() => setPageLoading(false))
   }, [])
+
+  // ── Read ?product=CODE from URL and open the modal ─────────────────────────
+  useEffect(() => {
+    if (!products.length) return
+    const code = new URLSearchParams(window.location.search).get('product')
+    if (!code) return
+    const found = products.find(p => p.code === code)
+    if (found) {
+      setSelectedProduct(found)
+      setProductOpen(true)
+    }
+  }, [products])
 
   // ── Cart / product actions ──────────────────────────────────────────────────
 
@@ -347,7 +357,7 @@ export default function HomePage() {
               <div key={item.id} className="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg border border-zinc-100">
                 <div className="h-11 w-11 rounded overflow-hidden bg-zinc-100 shrink-0">
                   {item.primary_image?.image
-                    ? <img src={item.primary_image.image} alt={item.name} className="w-full h-full object-cover" />
+                    ? <img src={item.primary_image.image} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     : <div className="w-full h-full flex items-center justify-center"><Package size={14} className="accent-text opacity-40" /></div>
                   }
                 </div>
@@ -411,6 +421,28 @@ export default function HomePage() {
             </ol>
           </div>
 
+          {/* Delivery info — only shown if configured */}
+          {(settings.delivery_methods || settings.delivery_time || settings.delivery_note) && (
+            <div className="rounded-lg border border-zinc-100 bg-zinc-50 p-3 space-y-1.5">
+              <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Delivery Info</p>
+              {settings.delivery_methods && (
+                <p className="text-xs text-zinc-600">
+                  <span className="font-medium text-zinc-700">Methods: </span>
+                  {settings.delivery_methods}
+                </p>
+              )}
+              {settings.delivery_time && (
+                <p className="text-xs text-zinc-600">
+                  <span className="font-medium text-zinc-700">Estimated time: </span>
+                  {settings.delivery_time}
+                </p>
+              )}
+              {settings.delivery_note && (
+                <p className="text-xs text-zinc-500 italic">{settings.delivery_note}</p>
+              )}
+            </div>
+          )}
+
           {[
             { key: 'name',     label: 'Full Name',        type: 'text',  ph: 'John Doe'             },
             { key: 'email',    label: 'Email',            type: 'email', ph: 'john@example.com'     },
@@ -428,6 +460,20 @@ export default function HomePage() {
               />
             </div>
           ))}
+
+          <div>
+            <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-wide mb-1">
+              Order Note
+            </label>
+            <textarea
+              placeholder="Optional — delivery instructions, preferences, anything we should know…"
+              value={checkoutData.note}
+              onChange={e => setCheckoutData(p => ({ ...p, note: e.target.value }))}
+              rows={2}
+              maxLength={500}
+              className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus-accent bg-white resize-none"
+            />
+          </div>
 
           {/* Order summary */}
           <div className="bg-zinc-50 rounded-lg p-3 border border-zinc-100 text-sm space-y-1.5">
@@ -611,6 +657,7 @@ export default function HomePage() {
         isOpen={productOpen}
         onClose={() => { setProductOpen(false); setSelectedProduct(null) }}
         onAddToCart={handleAddToCart}
+        settings={settings}
       />
 
 

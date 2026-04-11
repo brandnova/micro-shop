@@ -9,6 +9,9 @@ export function useSiteSettings() {
     store_tag: 'Quality products, delivered.',
     contact_email: '',
     contact_number: '',
+    delivery_methods: '',
+    delivery_time: '',
+    delivery_note: '',
     main_color: '#6366f1',
   })
   const [loading, setLoading] = useState(true)

@@ -23,10 +23,13 @@ export default function SettingsPanel({ settings, onSave }) {
   }
 
   const fields = [
-    { key: 'site_title',     label: 'Store Name',    type: 'text',  ph: 'My Store'            },
-    { key: 'store_tag',      label: 'Tagline',       type: 'text',  ph: 'Quality products…'   },
-    { key: 'contact_email',  label: 'Contact Email', type: 'email', ph: 'support@example.com' },
-    { key: 'contact_number', label: 'Phone Number',  type: 'tel',   ph: '080XXXXXXXX'         },
+    { key: 'site_title',       label: 'Store Name',             type: 'text',  ph: 'My Store'            },
+    { key: 'store_tag',        label: 'Tagline',                type: 'text',  ph: 'Quality products…'   },
+    { key: 'contact_email',    label: 'Contact Email',          type: 'email', ph: 'support@example.com' },
+    { key: 'contact_number',   label: 'Phone Number',           type: 'tel',   ph: '080XXXXXXXX'         },
+    { key: 'delivery_methods', label: 'Delivery Methods',       type: 'text',  ph: 'Pickup, Home Delivery' },
+    { key: 'delivery_time',    label: 'Estimated Delivery Time',type: 'text',  ph: '2–5 business days'   },
+    { key: 'delivery_note',    label: 'Delivery Note (optional)',type: 'text', ph: 'e.g. Call before delivery' },
   ]
 
   return (

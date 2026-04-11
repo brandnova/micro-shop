@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ExternalLink, X } from 'lucide-react'
+import { usePagination } from '../../hooks/usePagination'
+import Pagination from './Pagination'
 import Badge from '../ui/Badge'
 import Button from '../ui/Button'
 
@@ -54,6 +56,11 @@ export default function OrdersTable({ orders, onStatusUpdate, onViewProof }) {
     return matchSearch && (filter === 'all' || o.status === filter)
   })
 
+  const pg = usePagination(filtered, 15)  // 15 orders per page
+
+  // Reset to page 1 when filters change
+  useEffect(() => { pg.reset() }, [search, filter])
+
   return (
     <div className="space-y-4">
       <div>
@@ -93,14 +100,14 @@ export default function OrdersTable({ orders, onStatusUpdate, onViewProof }) {
                     {h}
                   </th>
                 ))}
-              </tr>
+               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-12 text-zinc-400 text-sm">No orders found.</td>
                 </tr>
-              ) : filtered.map((o, i) => (
+              ) : pg.paginated.map((o, i) => (
                 <motion.tr
                   key={o.id}
                   initial={{ opacity: 0 }}
@@ -145,6 +152,9 @@ export default function OrdersTable({ orders, onStatusUpdate, onViewProof }) {
             </tbody>
           </table>
         </div>
+        <div className="px-4 border-t border-zinc-100">
+          <Pagination {...pg} />
+        </div>
       </div>
 
       {/* Mobile card list */}
@@ -153,7 +163,7 @@ export default function OrdersTable({ orders, onStatusUpdate, onViewProof }) {
           <div className="text-center py-12 text-zinc-400 text-sm bg-white rounded-lg border border-zinc-200">
             No orders found.
           </div>
-        ) : filtered.map((o, i) => (
+        ) : pg.paginated.map((o, i) => (
           <motion.div
             key={o.id}
             initial={{ opacity: 0, y: 8 }}
@@ -195,6 +205,7 @@ export default function OrdersTable({ orders, onStatusUpdate, onViewProof }) {
             </div>
           </motion.div>
         ))}
+        <Pagination {...pg} />
       </div>
 
       <ConfirmDialog

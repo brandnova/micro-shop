@@ -38,6 +38,8 @@ Status        : Pending Payment
 Items:
 {_format_items(transaction)}
 
+{f"Customer note: {transaction.note}" + chr(10) if transaction.note else ""}
+
 ────────────────────────
 NEXT STEP: MAKE PAYMENT
 ────────────────────────
