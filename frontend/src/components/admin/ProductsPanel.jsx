@@ -39,6 +39,12 @@ function ProductForm({
   existingCategories,
 }) {
   const [imageActionLoading, setImageActionLoading] = useState(null)
+  const [submitted, setSubmitted] = useState(false)
+  
+  useEffect(() => {
+    setSubmitted(false)
+  }, [editingId])
+  
   const isValid = form.name.trim() !== '' && form.price !== '' && parseFloat(form.price) > 0
 
   const handleSetPrimary = async (imageId) => {
@@ -51,6 +57,12 @@ function ProductForm({
     setImageActionLoading(imageId)
     try { await onDeleteImage(editingId, imageId) }
     finally { setImageActionLoading(null) }
+  }
+
+  const handleFormSubmit = () => {
+    setSubmitted(true)
+    if (!isValid) return   // stop here — errors will now show
+    onSubmit()
   }
 
   return (
@@ -82,11 +94,15 @@ function ProductForm({
             value={form.name}
             onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
             className={`w-full px-3 py-2 border rounded-lg text-sm focus-accent bg-white transition-colors ${
-              form.name.trim() === '' ? 'border-red-200 bg-red-50/30' : 'border-zinc-200'
+              submitted && form.name.trim() === ''
+                ? 'border-red-300 bg-red-50/40'
+                : 'border-zinc-200'
             }`}
           />
-          {form.name.trim() === '' && (
-            <p className="text-[10px] text-red-400 mt-1">Product name is required</p>
+          {submitted && form.name.trim() === '' && (
+            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
+              <span>⚠</span> Product name is required
+            </p>
           )}
         </div>
 
@@ -122,11 +138,15 @@ function ProductForm({
             value={form.price}
             onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
             className={`w-full px-3 py-2 border rounded-lg text-sm focus-accent bg-white transition-colors ${
-              !form.price || parseFloat(form.price) <= 0 ? 'border-red-200 bg-red-50/30' : 'border-zinc-200'
+              submitted && (!form.price || parseFloat(form.price) <= 0)
+                ? 'border-red-300 bg-red-50/40'
+                : 'border-zinc-200'
             }`}
           />
-          {(!form.price || parseFloat(form.price) <= 0) && (
-            <p className="text-[10px] text-red-400 mt-1">Price must be greater than 0</p>
+          {submitted && (!form.price || parseFloat(form.price) <= 0) && (
+            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
+              <span>⚠</span> Price must be greater than 0
+            </p>
           )}
         </div>
 
@@ -244,9 +264,8 @@ function ProductForm({
           <Button
             size="sm"
             loading={saving}
-            disabled={!isValid}
-            title={!isValid ? 'Fill in all required fields' : undefined}
-            onClick={onSubmit}
+            onClick={handleFormSubmit}
+            title={submitted && !isValid ? 'Please fix the errors above' : undefined}
           >
             {editing ? 'Save Changes' : 'Add Product'}
           </Button>

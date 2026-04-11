@@ -1,4 +1,3 @@
-import cloudinary
 from pathlib import Path
 from decouple import config, Csv
 
@@ -111,36 +110,37 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # ─── Media / file storage ─────────────────────────────────────────────────────
-# Uses Cloudinary if credentials are present in .env, otherwise falls back
-# to local disk storage. This lets the project run locally without Cloudinary
-# and switch to cloud storage simply by populating the env vars.
+# Cloudinary is used when all three credentials are present in the environment.
+# Falls back to local disk if any are missing — zero config for local dev.
+#
+# We resolve this ONCE at startup and store the result in _USE_CLOUDINARY.
+# This avoids any race conditions with INSTALLED_APPS or lazy imports.
 
-CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME', default='')
-CLOUDINARY_API_KEY    = config('CLOUDINARY_API_KEY',    default='')
-CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET', default='')
+_CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME', default='').strip()
+_CLOUDINARY_API_KEY    = config('CLOUDINARY_API_KEY',    default='').strip()
+_CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET', default='').strip()
 
-_cloudinary_configured = all([CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET])
+_USE_CLOUDINARY = all([_CLOUDINARY_CLOUD_NAME, _CLOUDINARY_API_KEY, _CLOUDINARY_API_SECRET])
 
-if _cloudinary_configured:
+if _USE_CLOUDINARY:
     import cloudinary
 
     cloudinary.config(
-        cloud_name = CLOUDINARY_CLOUD_NAME,
-        api_key    = CLOUDINARY_API_KEY,
-        api_secret = CLOUDINARY_API_SECRET,
+        cloud_name = _CLOUDINARY_CLOUD_NAME,
+        api_key    = _CLOUDINARY_API_KEY,
+        api_secret = _CLOUDINARY_API_SECRET,
         secure     = True,
     )
 
-    INSTALLED_APPS += ['cloudinary_storage', 'cloudinary']
+    DEFAULT_FILE_STORAGE = 'core.cloudinary_storage.CloudinaryMediaStorage'
 
-    DEFAULT_FILE_STORAGE  = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-    # MEDIA_URL still used by Django internals; Cloudinary overrides actual delivery
+    # MEDIA_URL is not used for serving when Cloudinary is active
+    # (files are served directly from Cloudinary CDN), but Django
+    # still references it internally so we keep it set.
     MEDIA_URL  = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
 
 else:
-    # Local fallback — works for development and Render if Cloudinary isn't set
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     MEDIA_URL  = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'

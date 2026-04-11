@@ -37,6 +37,39 @@ MicroShop uses a **manual bank transfer workflow** — customers place orders, t
 
 ---
 
+## Workflows
+
+### Customer
+
+1. Browse products and add to cart (cart persists across page reloads)
+2. Checkout — enter name, email, phone, delivery address, and an optional order note
+3. Receive tracking code by email (e.g. `MS-2026-AB12CD34`)
+4. Transfer the exact order total to a bank account listed under **Payment Info** in the nav
+5. Click **Upload Proof** in the nav, enter tracking code, attach receipt
+6. Use **Track Order** in the nav to check order status at any time
+7. Receive email notifications at every status change
+
+### Store Owner
+
+1. Log into `/store-admin`
+2. **Overview** — total orders, confirmed revenue, pending actions at a glance
+3. **Products** — add, edit, deactivate, or permanently delete products; manage images
+4. **Orders** — search and filter orders, view payment proofs, update order status
+5. **Bank Details** — manage payment accounts shown to customers
+6. **Site Settings** — store name, tagline, theme color, delivery info, contact details
+
+Every status update emails the customer automatically. Stock is decremented when payment is confirmed.
+
+
+### Order Status Flow
+
+```
+pending → payment_uploaded → payment_confirmed → processing → shipped → delivered
+                                                                        ↘ cancelled
+```
+
+---
+
 ## Local Development
 
 ### 1. Clone
@@ -146,40 +179,6 @@ Revoke tokens by unchecking **Is active** or deleting them.
 
 ---
 
-## Workflows
-
-### Customer
-
-1. Browse products and add to cart (cart persists across page reloads)
-2. Checkout — enter name, email, phone, delivery address, and an optional order note
-3. Receive tracking code by email (e.g. `MS-2026-AB12CD34`)
-4. Transfer the exact order total to a bank account listed under **Payment Info** in the nav
-5. Click **Upload Proof** in the nav, enter tracking code, attach receipt
-6. Use **Track Order** in the nav to check order status at any time
-7. Receive email notifications at every status change
-
-### Store Owner
-
-1. Log into `/store-admin`
-2. **Overview** — total orders, confirmed revenue, pending actions at a glance
-3. **Products** — add, edit, deactivate, or permanently delete products; manage images
-4. **Orders** — search and filter orders, view payment proofs, update order status
-5. **Bank Details** — manage payment accounts shown to customers
-6. **Site Settings** — store name, tagline, theme color, delivery info, contact details
-
-Every status update emails the customer automatically. Stock is decremented when payment is confirmed.
-
----
-
-## Order Status Flow
-
-```
-pending → payment_uploaded → payment_confirmed → processing → shipped → delivered
-                                                                        ↘ cancelled
-```
-
----
-
 ## API Reference
 
 ```
@@ -208,6 +207,64 @@ GET  /api/site-settings/
 PATCH /api/site-settings/1/
 GET  /p/{code}/                                 # product share / OG redirect
 ```
+
+---
+
+## Build & Setup
+
+MicroShop includes a `build.sh` script (Linux/macOS) and a `build.bat` script (Windows) at the project root. Both scripts handle the complete setup in one step — installing dependencies, building the React frontend, integrating it into Django, running migrations, and creating a superuser if one doesn't exist yet.
+
+This means you can clone the repo and run a single command to get a fully working instance, whether locally or on a deployment platform like Render.
+
+---
+
+### Linux / macOS
+
+```bash
+chmod +x build.sh
+./build.sh
+```
+
+### Windows
+
+```bat
+build.bat
+```
+
+---
+
+### What the build script does
+
+1. Installs all Python dependencies from `requirements.txt`
+2. Installs frontend Node dependencies and runs `npm audit fix`
+3. Builds the React app with Vite (`npm run build`)
+4. Moves the compiled frontend into Django's static and template directories
+5. Runs `collectstatic` and `migrate`
+6. Creates a superuser if one does not already exist, using env vars or defaults (`admin` / `admin123`)
+
+---
+
+### After running the build
+
+**For local use:**
+
+Start the Django server:
+
+```bash
+cd backend
+python manage.py runserver
+```
+
+Then visit:
+- Storefront: `http://localhost:8000`
+- Django Admin: `http://localhost:8000/django-admin` — log in with `admin` / `admin123` (or whatever you set)
+- Store Admin: `http://localhost:8000/store-admin` — requires an Admin Token (create one in Django Admin first)
+
+> Change the default superuser password immediately if this instance will be accessible from outside your machine.
+
+**For Render deployment:**
+
+Set your environment variables in the Render dashboard (see Deployment section below), then set the build and start commands. The build script runs automatically on every deploy.
 
 ---
 

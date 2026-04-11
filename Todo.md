@@ -1,0 +1,1 @@
+Fix Cloudinary integration. Test returns True but files are still saved locally.
