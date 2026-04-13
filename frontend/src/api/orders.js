@@ -10,6 +10,9 @@ export const updateOrderStatus = (id, status, note = '') =>
 export const trackOrder = (trackingCode) =>
   client.get('/api/orders/track/', { params: { tracking_code: trackingCode } })
 
+export const confirmDelivery = (trackingCode) =>
+  client.post('/api/orders/confirm-delivery/', { tracking_code: trackingCode })
+
 export const uploadPaymentProof = (trackingCode, file) => {
   const formData = new FormData()
   formData.append('tracking_code', trackingCode)

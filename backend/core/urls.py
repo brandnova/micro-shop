@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ProductViewSet, TransactionViewSet, BankDetailsViewSet,
     SiteSettingsViewSet, verify_admin, upload_payment_proof,
-    track_order, health_check,
+    track_order, health_check, mark_order_delivered,
 )
 
 router = DefaultRouter()
@@ -17,6 +17,7 @@ urlpatterns = [
     # so they are matched before DRF tries to resolve them as {pk} detail routes.
     path('api/orders/upload-proof/', upload_payment_proof, name='upload_payment_proof'),
     path('api/orders/track/', track_order, name='track_order'),
+    path('api/orders/confirm-delivery/', mark_order_delivered, name='mark_order_delivered'),
 
     path('api/', include(router.urls)),
     path('api/health/', health_check, name='health_check'),

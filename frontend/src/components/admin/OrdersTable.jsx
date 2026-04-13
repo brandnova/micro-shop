@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ExternalLink, X } from 'lucide-react'
+import { ExternalLink, Eye, X } from 'lucide-react'
 import { usePagination } from '../../hooks/usePagination'
 import Pagination from './Pagination'
 import Badge from '../ui/Badge'
@@ -10,6 +10,178 @@ const STATUSES = [
   'pending','payment_uploaded','payment_confirmed',
   'processing','shipped','delivered','cancelled'
 ]
+
+function OrderDetailModal({ order, onClose, onStatusUpdate }) {
+  const [confirm, setConfirm] = useState(null)
+
+  if (!order) return null
+
+  const handleStatusChange = (newStatus) => {
+    setConfirm({ id: order.id, status: newStatus })
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={onClose}
+        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+          className="relative z-10 w-full max-w-2xl bg-white rounded-t-xl sm:rounded-xl shadow-2xl max-h-[92vh] flex flex-col"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 shrink-0">
+            <div>
+              <h2 className="font-serif text-lg text-zinc-900">Order Details</h2>
+              <p className="text-xs font-mono text-zinc-400 mt-0.5">{order.tracking_code}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="overflow-y-auto flex-1 px-5 py-5 space-y-5">
+
+            {/* Customer info */}
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Customer',  value: order.name     },
+                { label: 'Email',     value: order.email    },
+                { label: 'Phone',     value: order.phone    },
+                { label: 'Location',  value: order.location },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">{label}</p>
+                  <p className="text-sm text-zinc-800 mt-0.5">{value || '—'}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Order note */}
+            {order.note && (
+              <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
+                <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-widest mb-1">Customer Note</p>
+                <p className="text-sm text-zinc-700">{order.note}</p>
+              </div>
+            )}
+
+            {/* Items */}
+            {order.items?.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-2">Items Ordered</p>
+                <div className="bg-zinc-50 rounded-lg border border-zinc-100 divide-y divide-zinc-100">
+                  {order.items.map(item => (
+                    <div key={item.id} className="flex items-center justify-between px-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-zinc-800">{item.product_name}</p>
+                        <p className="text-xs text-zinc-400">
+                          ₦{parseFloat(item.price).toLocaleString()} × {item.quantity}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold accent-text shrink-0 ml-4">
+                        ₦{parseFloat(item.subtotal).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                  <div className="flex justify-between px-3 py-2.5 bg-white rounded-b-lg">
+                    <p className="text-sm font-semibold text-zinc-700">Total</p>
+                    <p className="text-base font-bold accent-text">
+                      ₦{parseFloat(order.total_amount).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Status + payment proof */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex-1">
+                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">
+                  Update Status
+                </p>
+                <select
+                  value={order.status}
+                  onChange={e => handleStatusChange(e.target.value)}
+                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus-accent cursor-pointer"
+                >
+                  {STATUSES.map(s => (
+                    <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                  ))}
+                </select>
+              </div>
+
+              {order.payment_proof && (
+                <div className="shrink-0">
+                  <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">
+                    Payment Proof
+                  </p>
+                  <button
+                    onClick={() => window.open(order.payment_proof, '_blank')}
+                    className="flex items-center gap-1.5 text-sm text-blue-500 hover:text-blue-700 border border-blue-200 bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <ExternalLink size={14} /> View Receipt
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Status history */}
+            {order.status_history?.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-2">
+                  Status History
+                </p>
+                <div className="space-y-2">
+                  {[...order.status_history].reverse().map(entry => (
+                    <div key={entry.id} className="flex items-start gap-2.5">
+                      <div className="mt-1.5 h-1.5 w-1.5 rounded-full accent-bg shrink-0" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-zinc-700 capitalize">
+                            {entry.status.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-[10px] text-zinc-400">
+                            {new Date(entry.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        {entry.note && (
+                          <p className="text-xs text-zinc-500 mt-0.5">{entry.note}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Inline confirm dialog for status change from within the modal */}
+      <ConfirmDialog
+        pending={confirm}
+        onConfirm={() => {
+          onStatusUpdate(confirm.id, confirm.status)
+          setConfirm(null)
+          onClose()
+        }}
+        onCancel={() => setConfirm(null)}
+      />
+    </>
+  )
+}
 
 function ConfirmDialog({ pending, onConfirm, onCancel }) {
   return (
@@ -45,6 +217,7 @@ export default function OrdersTable({ orders, onStatusUpdate, onViewProof }) {
   const [search, setSearch]   = useState('')
   const [filter, setFilter]   = useState('all')
   const [confirm, setConfirm] = useState(null)
+  const [detailOrder, setDetailOrder] = useState(null)
 
   const filtered = orders.filter(o => {
     const q = search.toLowerCase()
@@ -115,7 +288,7 @@ export default function OrdersTable({ orders, onStatusUpdate, onViewProof }) {
                   transition={{ delay: i * 0.025 }}
                   className="hover:bg-zinc-50 transition-colors"
                 >
-                  <td className="px-4 py-3">
+                  <td onClick={() => setDetailOrder(o)} className="px-4 py-3 cursor-pointer">
                     <p className="font-medium text-zinc-800 truncate max-w-[140px]">{o.name}</p>
                     <p className="text-xs text-zinc-400 truncate max-w-[140px]">{o.email}</p>
                   </td>
@@ -138,6 +311,12 @@ export default function OrdersTable({ orders, onStatusUpdate, onViewProof }) {
                     {new Date(o.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
+                    <button
+                      onClick={() => setDetailOrder(o)}
+                      className="text-xs text-zinc-500 hover:text-zinc-800 flex items-center gap-1 transition-colors"
+                    >
+                      <Eye size={12} /> View Details
+                    </button>
                     {o.payment_proof && (
                       <button
                         onClick={() => onViewProof(o.payment_proof)}
@@ -184,29 +363,50 @@ export default function OrdersTable({ orders, onStatusUpdate, onViewProof }) {
               <span className="text-zinc-400">{new Date(o.created_at).toLocaleDateString()}</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <select
-                value={o.status}
-                onChange={e => setConfirm({ id: o.id, status: e.target.value })}
-                className="flex-1 text-xs border border-zinc-200 rounded-lg px-2 py-2 bg-zinc-50 focus-accent cursor-pointer"
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setDetailOrder(o)}
+                className="flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-600 border border-zinc-200 rounded-lg px-3 py-2 bg-zinc-50 hover:bg-zinc-100 transition-colors w-full"
               >
-                {STATUSES.map(s => (
-                  <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-                ))}
-              </select>
-              {o.payment_proof && (
-                <button
-                  onClick={() => onViewProof(o.payment_proof)}
-                  className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 px-2 py-2 border border-zinc-200 rounded-lg bg-zinc-50 whitespace-nowrap"
+                <Eye size={13} /> View Details
+              </button>
+              <div className="flex items-center gap-2">
+                <select
+                  value={o.status}
+                  onChange={e => setConfirm({ id: o.id, status: e.target.value })}
+                  className="flex-1 text-xs border border-zinc-200 rounded-lg px-2 py-2 bg-zinc-50 focus-accent cursor-pointer"
                 >
-                  <ExternalLink size={12} /> Proof
-                </button>
-              )}
+                  {STATUSES.map(s => (
+                    <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                  ))}
+                </select>
+                {o.payment_proof && (
+                  <button
+                    onClick={() => onViewProof(o.payment_proof)}
+                    className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 px-2 py-2 border border-zinc-200 rounded-lg bg-zinc-50 whitespace-nowrap"
+                  >
+                    <ExternalLink size={12} /> Proof
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         ))}
         <Pagination {...pg} />
       </div>
+
+      <AnimatePresence>
+        {detailOrder && (
+          <OrderDetailModal
+            order={detailOrder}
+            onClose={() => setDetailOrder(null)}
+            onStatusUpdate={(id, status) => {
+              onStatusUpdate(id, status)
+              setDetailOrder(null)
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <ConfirmDialog
         pending={confirm}

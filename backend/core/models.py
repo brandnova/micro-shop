@@ -177,7 +177,12 @@ class TransactionItem(models.Model):
 
     @property
     def subtotal(self):
-        return self.price * self.quantity
+        try:
+            price = self.price if self.price is not None else 0
+            quantity = self.quantity if self.quantity is not None else 0
+            return price * quantity
+        except (TypeError, Exception):
+            return 0
 
 
 class TransactionStatusHistory(models.Model):

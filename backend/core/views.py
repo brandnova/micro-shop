@@ -22,7 +22,9 @@ from .serializers import (
 )
 from .emails import (
     send_order_placed_email,
+    send_owner_new_order_email,
     send_payment_uploaded_email,
+    send_owner_payment_proof_email,
     send_status_update_email,
 )
 
@@ -36,6 +38,7 @@ def health_check(request):
         "version": getattr(settings, "API_VERSION", "2.0"),
         "name": getattr(settings, "API_NAME", "MicroShop API"),
         "environment": getattr(settings, "API_ENV", "development"),
+        "debug": settings.DEBUG,
     })
 
 
@@ -196,6 +199,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         transaction = serializer.save()
 
         send_order_placed_email(transaction)
+        send_owner_new_order_email(transaction)
 
         return Response(
             TransactionSerializer(transaction).data,
@@ -283,8 +287,69 @@ def upload_payment_proof(request):
     )
 
     send_payment_uploaded_email(transaction)
+    send_owner_payment_proof_email(transaction)
 
     return Response({'message': 'Payment proof uploaded successfully.'}, status=status.HTTP_200_OK)
+
+
+# ─── Upload payment proof (User) ─────────────────────────────────────────────────────────────
+
+@api_view(['POST'])
+def mark_order_delivered(request):
+    """
+    Allows a customer to self-confirm delivery of their order.
+    Requires the tracking code to authenticate the request.
+    Only valid when the order is in 'shipped' status.
+    """
+    tracking_code = request.data.get('tracking_code')
+
+    if not tracking_code:
+        return Response(
+            {'error': 'tracking_code is required.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        transaction = Transaction.objects.get(tracking_code=tracking_code)
+    except Transaction.DoesNotExist:
+        return Response(
+            {'error': 'No order found with that tracking code.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Only allow this transition from 'shipped'
+    # (already delivered = no-op with a clear message,
+    #  any earlier status = not ready yet)
+    if transaction.status == 'delivered':
+        return Response(
+            {'message': 'This order has already been marked as delivered.', 'already_delivered': True},
+            status=status.HTTP_200_OK
+        )
+
+    if transaction.status != 'shipped':
+        return Response(
+            {
+                'error': f'This order cannot be marked as delivered yet. '
+                         f'Current status: {transaction.status.replace("_", " ")}.'
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    transaction.status = 'delivered'
+    transaction.save()
+
+    TransactionStatusHistory.objects.create(
+        transaction=transaction,
+        status='delivered',
+        note='Delivery confirmed by customer.',
+    )
+
+    send_status_update_email(transaction)
+
+    return Response(
+        {'message': 'Thank you for confirming delivery. Your order is now complete.'},
+        status=status.HTTP_200_OK
+    )
 
 
 # ─── Bank Details ─────────────────────────────────────────────────────────────

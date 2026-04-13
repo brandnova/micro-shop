@@ -7,7 +7,7 @@ import {
 
 import { getAllActiveProducts }                        from '../api/products'
 import { getBankDetails, healthCheck }                 from '../api/settings'
-import { trackOrder, uploadPaymentProof, createOrder } from '../api/orders'
+import { trackOrder, uploadPaymentProof, createOrder, confirmDelivery } from '../api/orders'
 import { useSiteSettings }                             from '../hooks/useSiteSettings'
 import { useCart }                                     from '../hooks/useCart'
 import { useScrollToTop }                              from '../hooks/useScrollToTop'
@@ -112,6 +112,7 @@ function HealthPanel() {
 // ─── HomePage ─────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
+  const [isDebug, setIsDebug] = useState(false)
   const { settings, loading: settingsLoading } = useSiteSettings()
   const { toast, toasts, dismiss }             = useToast()
   const { visible: scrollVisible, scrollToTop } = useScrollToTop()
@@ -138,6 +139,9 @@ export default function HomePage() {
   const [productOpen, setProductOpen]               = useState(false)
   const [selectedProduct, setSelectedProduct]       = useState(null)
   const [orderConfirmedOpen, setOrderConfirmedOpen] = useState(false)
+  const [deliveryConfirmOpen, setDeliveryConfirmOpen]   = useState(false)
+  const [deliverySuccessOpen, setDeliverySuccessOpen]   = useState(false)
+  const [deliveryLoading, setDeliveryLoading]           = useState(false)
 
   // Form / response state
   const [trackInput, setTrackInput]           = useState('')
@@ -170,6 +174,7 @@ export default function HomePage() {
           setBankDetails([])
         }
       }),
+      healthCheck().then(r => setIsDebug(r.data?.debug === true)).catch(() => {}),
     ])
       .catch(() => toast.error('Failed to load page data. Please refresh.'))
       .finally(() => setPageLoading(false))
@@ -262,6 +267,24 @@ export default function HomePage() {
       toast.error(e.message)
     } finally {
       setCheckoutLoading(false)
+    }
+  }
+
+  // ── Confim Delivery ────────────────────────────────────────────────────────────────
+  
+  const handleConfirmDelivery = async () => {
+    setDeliveryLoading(true)
+    try {
+      await confirmDelivery(trackInput.trim())
+      setDeliveryConfirmOpen(false)
+      // Re-fetch order to get updated status
+      const r = await trackOrder(trackInput.trim())
+      setOrderStatus(r.data)
+      setDeliverySuccessOpen(true)
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setDeliveryLoading(false)
     }
   }
 
@@ -530,10 +553,16 @@ export default function HomePage() {
       {/* ── Track Order modal ───────────────────────────────────────────────── */}
       <Modal
         isOpen={trackingOpen}
-        onClose={() => { setTrackingOpen(false); setOrderStatus(null); setTrackInput('') }}
+        onClose={() => {
+          setTrackingOpen(false)
+          setOrderStatus(null)
+          setTrackInput('')
+          setDeliverySuccessOpen(false)
+        }}
         title="Track Your Order"
       >
         <div className="space-y-4">
+          {/* Search bar */}
           <div className="flex gap-2">
             <input
               type="text"
@@ -551,43 +580,156 @@ export default function HomePage() {
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-zinc-50 rounded-lg border border-zinc-200 p-4 space-y-3"
+                className="space-y-4"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-semibold text-zinc-800 text-sm">{orderStatus.name}</p>
-                    <p className="text-xs text-zinc-400 font-mono mt-0.5">{orderStatus.tracking_code}</p>
+                {/* Order summary card */}
+                <div className="bg-zinc-50 rounded-lg border border-zinc-200 p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-zinc-800 text-sm">{orderStatus.name}</p>
+                      <p className="text-xs text-zinc-400 font-mono mt-0.5">{orderStatus.tracking_code}</p>
+                    </div>
+                    <Badge status={orderStatus.status} />
                   </div>
-                  <Badge status={orderStatus.status} />
+
+                  <p className="text-sm text-zinc-600">
+                    Total:{' '}
+                    <span className="font-semibold text-zinc-900">
+                      ₦{parseFloat(orderStatus.total_amount).toLocaleString()}
+                    </span>
+                  </p>
+
+                  {/* Items */}
+                  {orderStatus.items?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">
+                        Items
+                      </p>
+                      <div className="space-y-1">
+                        {orderStatus.items.map(item => (
+                          <div key={item.id} className="flex justify-between text-xs text-zinc-600">
+                            <span>{item.product_name} × {item.quantity}</span>
+                            <span>₦{parseFloat(item.subtotal).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Status history */}
+                  {orderStatus.status_history?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-1">
+                        History
+                      </p>
+                      <StatusTimeline statusHistory={orderStatus.status_history} />
+                    </div>
+                  )}
                 </div>
 
-                <p className="text-sm text-zinc-600">
-                  Total: <span className="font-semibold text-zinc-900">₦{parseFloat(orderStatus.total_amount).toLocaleString()}</span>
-                </p>
+                {/* Confirm delivery CTA — shown only when status is 'shipped' */}
+                {orderStatus.status === 'shipped' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-emerald-50 border border-emerald-200 rounded-lg p-4"
+                  >
+                    <p className="text-sm font-semibold text-emerald-800 mb-1">
+                      Has your order arrived?
+                    </p>
+                    <p className="text-xs text-emerald-700 mb-3 leading-relaxed">
+                      If you have received your order, please confirm delivery below.
+                      This closes out your order and helps us keep our records accurate.
+                    </p>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700"
+                      onClick={() => setDeliveryConfirmOpen(true)}
+                    >
+                      <CheckCircle size={14} /> Mark as Received
+                    </Button>
+                  </motion.div>
+                )}
 
-                {orderStatus.items?.length > 0 && (
-                  <div>
-                    <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">Items</p>
-                    <div className="space-y-1">
-                      {orderStatus.items.map(item => (
-                        <div key={item.id} className="flex justify-between text-xs text-zinc-600">
-                          <span>{item.product_name} × {item.quantity}</span>
-                          <span>₦{parseFloat(item.subtotal).toLocaleString()}</span>
-                        </div>
-                      ))}
+                {/* Already delivered confirmation */}
+                {orderStatus.status === 'delivered' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start gap-3"
+                  >
+                    <CheckCircle size={18} className="text-emerald-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-800">Order Delivered</p>
+                      <p className="text-xs text-emerald-700 mt-0.5">
+                        This order has been marked as delivered. Thank you for shopping with us.
+                      </p>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
-                {orderStatus.status_history?.length > 0 && (
-                  <div>
-                    <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-1">History</p>
-                    <StatusTimeline statusHistory={orderStatus.status_history} />
-                  </div>
-                )}
+                {/* Delivery success feedback (shows after they confirm) */}
+                <AnimatePresence>
+                  {deliverySuccessOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.97 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="bg-white border border-emerald-200 rounded-lg p-5 text-center"
+                    >
+                      <div className="h-12 w-12 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+                        <CheckCircle size={24} className="text-emerald-500" />
+                      </div>
+                      <p className="font-semibold text-zinc-800 mb-1">Delivery Confirmed</p>
+                      <p className="text-xs text-zinc-500">
+                        Thank you for confirming receipt of your order.
+                        A confirmation email has been sent to you.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+      </Modal>
+
+      {/* Delivery confirmation dialog */}
+      <Modal
+        isOpen={deliveryConfirmOpen}
+        onClose={() => setDeliveryConfirmOpen(false)}
+        title="Confirm Delivery"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-100 rounded-lg">
+            <CheckCircle size={18} className="text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-800 leading-relaxed">
+              Please only confirm if you have physically received your order.
+              This action cannot be undone.
+            </p>
+          </div>
+          <p className="text-sm text-zinc-600">
+            Confirming delivery for order{' '}
+            <span className="font-mono font-semibold text-zinc-800">{trackInput}</span>.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setDeliveryConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              loading={deliveryLoading}
+              onClick={handleConfirmDelivery}
+            >
+              Yes, I Received It
+            </Button>
+          </div>
         </div>
       </Modal>
 
@@ -669,14 +811,15 @@ export default function HomePage() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={scrollToTop}
-            className="fixed bottom-5 right-5 z-50 h-9 w-9 rounded-lg accent-bg text-white shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity"
+            className="fixed bottom-20 right-5 z-50 h-9 w-9 rounded-lg accent-bg text-white shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity"
           >
             <ArrowUp size={16} />
           </motion.button>
         )}
       </AnimatePresence>
 
-      <HealthPanel />
+      {/* Only show in development (DEBUG=True on backend) */}
+      {isDebug && <HealthPanel />}
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
